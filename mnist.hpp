@@ -47,8 +47,7 @@ class Mnist {
 
             image_file.read((char*) &magic, sizeof(magic));
             magic = reverse_int(magic);
-            cout << magic << endl;
- 
+           
             if (magic != 2051) {
                 error = 1;
                 cout << "Incorrect image file magic: " << magic << endl;
@@ -87,7 +86,6 @@ class Mnist {
             result->image.resize(rows * cols);
             label_file.read(&result->label, 1);
             image_file.read(&result->image[0], rows * cols);
-            cout << to_string(result->label) << endl;
             return result;
         }
 

@@ -6,9 +6,11 @@
 
 using namespace std;
 
-const int INPUT_NODES = 2;
-const int HIDDEN_NODES = 2;
-const int OUTPUT_NODES = 1;
+const int INPUT_NODES = 784;
+const int HIDDEN_NODES = 100;
+const int OUTPUT_NODES = 10;
+const int TRAINNIG_RECS = 600;
+const int TESTING_RECS = 10;
 
 typedef cv::Vec<float, INPUT_NODES> input_vec;
 typedef cv::Vec<float, HIDDEN_NODES> hidden_vec;
@@ -18,12 +20,10 @@ class NeuralNetwork {
 
    public: 
     // размеры нейронной сети
-    NeuralNetwork(float learning_rate, const output_vec& new_targets) {
+    NeuralNetwork(float learning_rate) {
         // коэффициент обучения
         l_rate  = learning_rate;
-        targets = new_targets;
-
-       // cv::theRNG().state = time(NULL);
+        cv::theRNG().state = time(NULL);
 
           // веса между входящим и скрытым слоем, выбраны случайно       
         wih = cv::Mat(HIDDEN_NODES, INPUT_NODES, CV_32F);
@@ -36,25 +36,34 @@ class NeuralNetwork {
    ~NeuralNetwork() {};
 
     // network training
-   void train(const input_vec& input_layer);
+   void train(const input_vec& input_layer, const output_vec& targets);
    // network query
    void query(const input_vec& layer);
 
-   void show() {
+   int answear() {
 
-      cout << "Target: \n" << targets << endl << "Current: \n" << final_output << endl;
-      cout <<"Updated who \n" << who << endl << "Updated wih: \n" << wih << endl;
+      int max_idx;
+      cv::minMaxIdx(final_output, nullptr, nullptr, nullptr, &max_idx);
+      return max_idx;
    }
 
-   // Матрицы весовых коэффициентов связей.
-   // wih - вход скрытый 
-   // who - скрытый выходной
-   cv::Mat wih, who;
+   string outputs() {
+
+     stringstream str;
+     str << '[';
+     for (int i=0; i<final_output.rows; i++) str << final_output[i] << ',';
+     str << ']';
+     return str.str();
+   }
 
    private:
+      // Матрицы весовых коэффициентов связей.
+   // wih - вход скрытый 
+   // who - скрытый выходной
+      cv::Mat wih, who;
       float l_rate;
       hidden_vec hidden_input, hidden_output, hidden_error; 
-      output_vec final_input, final_output, output_error, targets;
+      output_vec final_input, final_output, output_error;
       
       float sigmoid(float x) { return 1 / (1 + exp(-x)); }
 };
@@ -78,7 +87,7 @@ void NeuralNetwork::query(const input_vec& layer) {
       final_output[i] = sigmoid(final_input[i]);
 }
 
-void NeuralNetwork::train(const input_vec& input_layer) {
+void NeuralNetwork::train(const input_vec& input_layer, const output_vec& targets) {
 
   query(input_layer);
   // рассчитем ошибку
@@ -111,26 +120,53 @@ void NeuralNetwork::train(const input_vec& input_layer) {
 }
 
 int main () {
- /*   Mnist mnist("./data/train-images.idx3-ubyte", "./data/train-labels.idx1-ubyte");
-    vector<unique_ptr<Data>> training_data(10);
-    for (int i=0; i<training_data.capacity(); i++) {
-      training_data[i] = mnist.get_next();
-      cv::Mat tmp(mnist.rows, mnist.cols, CV_8UC1, &training_data[i]->image[0]);
-      cv::imshow(to_string(training_data[i]->label), tmp);
-      cv::waitKey(0);
-    }
-    return 0;*/
-    output_vec target {0.99f};
-    input_vec input_layer {0.01f, 0.01f};
-   // cv::randn(input_layer, 0.0f, pow(INPUT_NODES, -0.5f));
+    cout << "Training with " << TRAINNIG_RECS << " records\n";
 
-    NeuralNetwork net(0.9f, target);
-    for (int i=0; i<100; i++) {
-    //  cout << "Epoch: " << i << endl;
-      net.train(input_layer);
-     // net.show();
+    Mnist training_data("./data/train-images.idx3-ubyte", "./data/train-labels.idx1-ubyte");
+
+    NeuralNetwork net(0.1f);
+    input_vec input_layer;
+    unique_ptr<Data> data;
+
+    for (int i=0; i<TRAINNIG_RECS; i++) {
+
+      data = training_data.get_next();
+
+      // Преобразуем картинку в формат OpenCV float Vector
+      cv::Mat tmp(INPUT_NODES, 1, CV_8UC1, &data->image[0]);
+      tmp /= 255;
+      tmp.convertTo(input_layer, CV_32F, 0.99f, 0.001f);
+      
+      output_vec target = {0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f};
+      target[int(data->label)] = 0.99f;
+
+      net.train(input_layer, target);
     }  
-    net.query(input_layer);
-    net.show();
+
+    cout << "Testing with " << TESTING_RECS << " records\n";
+    vector<int> score(TESTING_RECS);
+    Mnist testing_data("./data/t10k-images.idx3-ubyte", "./data/t10k-labels.idx1-ubyte");
+
+    for (int i=0; i<TESTING_RECS; i++) {
+
+      data = testing_data.get_next();
+     /* cv::Mat pic(testing_data.rows, testing_data.cols, CV_8UC1, &data->image[0]);
+      cv::imshow(to_string(data->label), pic);
+      cv::waitKey(0);*/
+
+      cv::Mat tmp(INPUT_NODES, 1, CV_8UC1, &data->image[0]);
+      tmp /= 255;
+      tmp.convertTo(input_layer, CV_32F, 0.99f, 0.001f);
+      net.query(input_layer);
+
+      if (int(data->label) == net.answear()) score.push_back(1); else score.push_back(0);
+
+      cout << "Correct: " << int(data->label) << " Net: " 
+           << net.answear() << " : " << net.outputs() << endl;           
+    }  
+    float eff = (float) cv::sum(score)[0] / TESTING_RECS;
+    cout << "Efficiency = " << eff;
+    //net.show();
+
     return 0;
 }
