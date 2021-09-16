@@ -1,16 +1,16 @@
 ﻿#include<iostream>
 #include<opencv2/core.hpp>
-//#include <opencv2/imgproc.hpp>
+#include <opencv2/imgproc.hpp>
 #include<opencv2/highgui.hpp>
 #include"mnist.hpp"
 
 using namespace std;
 
 const int INPUT_NODES = 784;
-const int HIDDEN_NODES = 100;
+const int HIDDEN_NODES = 200;
 const int OUTPUT_NODES = 10;
 const int TRAINNIG_RECS = 600;
-const int TESTING_RECS = 10;
+const int TESTING_RECS = 100;
 
 typedef cv::Vec<float, INPUT_NODES> input_vec;
 typedef cv::Vec<float, HIDDEN_NODES> hidden_vec;
@@ -39,6 +39,8 @@ class NeuralNetwork {
    void train(const input_vec& input_layer, const output_vec& targets);
    // network query
    void query(const input_vec& layer);
+    // обратный ход
+   void back_query(const output_vec& targets);
 
    int answear() {
 
@@ -50,10 +52,17 @@ class NeuralNetwork {
    string outputs() {
 
      stringstream str;
-     str << '[';
-     for (int i=0; i<final_output.rows; i++) str << final_output[i] << ',';
-     str << ']';
+     str << final_output;
      return str.str();
+   }
+
+   void show_backquery(const string& label) {
+
+    cv::Mat pic(28, 28, CV_32F, &inputs[0]);
+    cv::Mat resized;
+    cv::resize(pic, resized, cv::Size(56, 56), cv::INTER_LINEAR);
+    cv::imshow(label, resized);
+    cv::waitKey(0);
    }
 
    private:
@@ -62,10 +71,12 @@ class NeuralNetwork {
    // who - скрытый выходной
       cv::Mat wih, who;
       float l_rate;
+      input_vec inputs;
       hidden_vec hidden_input, hidden_output, hidden_error; 
       output_vec final_input, final_output, output_error;
       
       float sigmoid(float x) { return 1 / (1 + exp(-x)); }
+      float inv_sigmoid(float x) { return log(x / abs(1 - x)); }
 };
 
 void NeuralNetwork::query(const input_vec& layer) {
@@ -119,12 +130,46 @@ void NeuralNetwork::train(const input_vec& input_layer, const output_vec& target
   };
 }
 
+void NeuralNetwork::back_query(const output_vec& targets) {
+  
+    for (int i=0; i<final_input.rows; i++) final_input[i] = inv_sigmoid(targets[i]);
+    
+    cv::Mat who_t = who.t();
+    for (int i=0; i<who_t.rows; i++)
+      hidden_output[i] = float(who_t.row(i).dot(final_input.t()));
+    
+    double min_val, max_val;
+    cv::minMaxIdx(hidden_output, &min_val, &max_val);
+    for (int i=0; i<hidden_output.rows; i++) {
+
+      hidden_output[i] -= float(min_val);
+      hidden_output[i] /= float(max_val);
+      hidden_output[i] *= 0.98f;
+      hidden_output[i] += 0.001f;
+    }  
+
+    for (int i=0; i<hidden_input.rows; i++) hidden_input[i] = inv_sigmoid(hidden_output[i]);
+
+    cv::Mat wih_t = wih.t();
+    for (int i=0; i<wih_t.rows; i++)
+      inputs[i] = float(wih_t.row(i).dot(hidden_input.t()));
+
+    cv::minMaxIdx(inputs, &min_val, &max_val);
+    for (int i=0; i<inputs.rows; i++) {
+
+      inputs[i] -= (float) min_val;
+      inputs[i] /= (float) max_val;
+      inputs[i] *= 0.98f;
+      inputs[i] += 0.001f;
+    }
+}
+
 int main () {
     cout << "Training with " << TRAINNIG_RECS << " records\n";
 
     Mnist training_data("./data/train-images.idx3-ubyte", "./data/train-labels.idx1-ubyte");
 
-    NeuralNetwork net(0.1f);
+    NeuralNetwork net(0.2f);
     input_vec input_layer;
     unique_ptr<Data> data;
 
@@ -142,6 +187,17 @@ int main () {
 
       net.train(input_layer, target);
     }  
+    cout << "Training ok\n";
+
+    for (int i=0; i<OUTPUT_NODES; i++) {
+
+      output_vec target = {0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f};
+      target[i] = 0.99f;
+      net.back_query(target);
+      cout << i << endl;
+      net.show_backquery(to_string(i));
+    }  
+    return 0;
 
     cout << "Testing with " << TESTING_RECS << " records\n";
     vector<int> score(TESTING_RECS);
@@ -164,8 +220,8 @@ int main () {
       cout << "Correct: " << int(data->label) << " Net: " 
            << net.answear() << " : " << net.outputs() << endl;           
     }  
-    float eff = (float) cv::sum(score)[0] / TESTING_RECS;
-    cout << "Efficiency = " << eff;
+    float eff = (float) cv::sum(score)[0] / TESTING_RECS * 100;
+    cout << "Efficiency = " << eff << '%';
     //net.show();
 
     return 0;
