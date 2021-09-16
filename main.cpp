@@ -9,7 +9,7 @@ using namespace std;
 const int INPUT_NODES = 784;
 const int HIDDEN_NODES = 200;
 const int OUTPUT_NODES = 10;
-const int TRAINNIG_RECS = 600;
+const int TRAINNIG_RECS = 6000;
 const int TESTING_RECS = 100;
 
 typedef cv::Vec<float, INPUT_NODES> input_vec;
@@ -60,9 +60,10 @@ class NeuralNetwork {
 
     cv::Mat pic(28, 28, CV_32F, &inputs[0]);
     cv::Mat resized;
-    cv::resize(pic, resized, cv::Size(56, 56), cv::INTER_LINEAR);
+    cv::resize(pic, resized, cv::Size(84, 84), cv::INTER_LINEAR);
     cv::imshow(label, resized);
     cv::waitKey(0);
+    cv::destroyAllWindows();
    }
 
    private:
@@ -146,7 +147,7 @@ void NeuralNetwork::back_query(const output_vec& targets) {
       hidden_output[i] /= float(max_val);
       hidden_output[i] *= 0.98f;
       hidden_output[i] += 0.001f;
-    }  
+    } 
 
     for (int i=0; i<hidden_input.rows; i++) hidden_input[i] = inv_sigmoid(hidden_output[i]);
 
@@ -189,16 +190,6 @@ int main () {
     }  
     cout << "Training ok\n";
 
-    for (int i=0; i<OUTPUT_NODES; i++) {
-
-      output_vec target = {0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f};
-      target[i] = 0.99f;
-      net.back_query(target);
-      cout << i << endl;
-      net.show_backquery(to_string(i));
-    }  
-    return 0;
-
     cout << "Testing with " << TESTING_RECS << " records\n";
     vector<int> score(TESTING_RECS);
     Mnist testing_data("./data/t10k-images.idx3-ubyte", "./data/t10k-labels.idx1-ubyte");
@@ -222,7 +213,17 @@ int main () {
     }  
     float eff = (float) cv::sum(score)[0] / TESTING_RECS * 100;
     cout << "Efficiency = " << eff << '%';
-    //net.show();
+    
+    cout << "Show back query\n";
+    for (int i=0; i<OUTPUT_NODES; i++) {
+
+      output_vec target = {0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f};
+      target[i] = 0.99f;
+      net.back_query(target);
+      cout << i << endl;
+      net.show_backquery(to_string(i));
+    }  
+    return 0;
 
     return 0;
 }
