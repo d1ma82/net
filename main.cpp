@@ -105,7 +105,7 @@ void NeuralNetwork::train(const input_vec& input_layer, const output_vec& target
 
   query(input_layer);
   // рассчитем ошибку
-  output_error = targets - final_output;
+  output_error = -(targets - final_output);
 
   // рассчитаем ошибку скрытого слоя
   // это output_error распределенная пропорционально весовым коэффициентам
@@ -117,14 +117,14 @@ void NeuralNetwork::train(const input_vec& input_layer, const output_vec& target
   output_vec tmp_o = output_error.mul(final_output).mul(ONES_O - final_output);
   for (int i=0; i<tmp_o.rows; i++) {
     for (int j=0; j<hidden_output.rows; j++)
-        who.at<float>(i, j) -= -l_rate * (tmp_o[i] * hidden_output[j]);
+        who.at<float>(i, j) -= l_rate * (tmp_o[i] * hidden_output[j]);
   };
 
   // обновить весовые коэффициенты между входным и скрытым слоем
   hidden_vec tmp_h = hidden_error.mul(hidden_output).mul(ONES_H - hidden_output);
   for (int i=0; i<tmp_h.rows; i++) {
     for (int j=0; j<input_layer.rows; j++)
-        wih.at<float>(i, j) -= -l_rate * (tmp_h[i] * input_layer[j]);
+        wih.at<float>(i, j) -= l_rate * (tmp_h[i] * input_layer[j]);
   };
 }
 
