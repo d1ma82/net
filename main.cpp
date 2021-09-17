@@ -27,11 +27,11 @@ class NeuralNetwork {
 
           // веса между входящим и скрытым слоем, выбраны случайно       
         wih = cv::Mat(HIDDEN_NODES, INPUT_NODES, CV_32F);
-        cv::randn(wih, 0.0f, pow(HIDDEN_NODES, -0.5f));
+        cv::randn(wih, 0.001f, pow(HIDDEN_NODES, -0.5f));
       
         // веса между скрытым и выходным слоем, выбраны случайно
         who = cv::Mat(OUTPUT_NODES, HIDDEN_NODES, CV_32F);
-        cv::randn(who, 0.0f, pow(OUTPUT_NODES, -0.5f));
+        cv::randn(who, 0.001f, pow(OUTPUT_NODES, -0.5f));
     };
    ~NeuralNetwork() {};
 
@@ -60,13 +60,15 @@ class NeuralNetwork {
 
     cv::Mat pic(28, 28, CV_32F, &inputs[0]);
     cv::Mat resized;
-    cv::resize(pic, resized, cv::Size(84, 84), cv::INTER_LINEAR);
+    cv::resize(pic, resized, cv::Size(84, 84), cv::INTER_AREA);
     cv::imshow(label, resized);
     cv::waitKey(0);
     cv::destroyAllWindows();
    }
 
    private:
+      const output_vec ONES_O = cv::Mat(output_vec::ones());
+      const hidden_vec ONES_H = cv::Mat(hidden_vec::ones());
       // Матрицы весовых коэффициентов связей.
    // wih - вход скрытый 
    // who - скрытый выходной
@@ -108,26 +110,21 @@ void NeuralNetwork::train(const input_vec& input_layer, const output_vec& target
   // рассчитаем ошибку скрытого слоя
   // это output_error распределенная пропорционально весовым коэффициентам
   cv::Mat who_t = who.t();
-
   for (int i=0; i<who_t.rows; i++)
     hidden_error[i] = float(who_t.row(i).dot(output_error.t()));
 
   // обновить весовые коэффициенты между скрытым и выходным слоем
-  output_vec ones_o = cv::Mat(output_vec::ones());
-  output_vec tmp_o = output_error.mul(final_output).mul(ones_o - final_output);
-
+  output_vec tmp_o = output_error.mul(final_output).mul(ONES_O - final_output);
   for (int i=0; i<tmp_o.rows; i++) {
     for (int j=0; j<hidden_output.rows; j++)
-        who.at<float>(i, j) += l_rate * (tmp_o[i] * hidden_output[j]);
+        who.at<float>(i, j) -= -l_rate * (tmp_o[i] * hidden_output[j]);
   };
 
   // обновить весовые коэффициенты между входным и скрытым слоем
-  hidden_vec onec_h = cv::Mat(hidden_vec::ones());
-  hidden_vec tmp_h = hidden_error.mul(hidden_output).mul(onec_h - hidden_output);
-
+  hidden_vec tmp_h = hidden_error.mul(hidden_output).mul(ONES_H - hidden_output);
   for (int i=0; i<tmp_h.rows; i++) {
     for (int j=0; j<input_layer.rows; j++)
-        wih.at<float>(i, j) += l_rate * (tmp_h[i] * input_layer[j]);
+        wih.at<float>(i, j) -= -l_rate * (tmp_h[i] * input_layer[j]);
   };
 }
 
@@ -146,7 +143,7 @@ void NeuralNetwork::back_query(const output_vec& targets) {
       hidden_output[i] -= float(min_val);
       hidden_output[i] /= float(max_val);
       hidden_output[i] *= 0.98f;
-      hidden_output[i] += 0.001f;
+      hidden_output[i] += 0.01f;
     } 
 
     for (int i=0; i<hidden_input.rows; i++) hidden_input[i] = inv_sigmoid(hidden_output[i]);
@@ -161,7 +158,7 @@ void NeuralNetwork::back_query(const output_vec& targets) {
       inputs[i] -= (float) min_val;
       inputs[i] /= (float) max_val;
       inputs[i] *= 0.98f;
-      inputs[i] += 0.001f;
+      inputs[i] += 0.01f;
     }
 }
 
@@ -197,10 +194,6 @@ int main () {
     for (int i=0; i<TESTING_RECS; i++) {
 
       data = testing_data.get_next();
-     /* cv::Mat pic(testing_data.rows, testing_data.cols, CV_8UC1, &data->image[0]);
-      cv::imshow(to_string(data->label), pic);
-      cv::waitKey(0);*/
-
       cv::Mat tmp(INPUT_NODES, 1, CV_8UC1, &data->image[0]);
       tmp /= 255;
       tmp.convertTo(input_layer, CV_32F, 0.99f, 0.001f);
@@ -212,9 +205,9 @@ int main () {
            << net.answear() << " : " << net.outputs() << endl;           
     }  
     float eff = (float) cv::sum(score)[0] / TESTING_RECS * 100;
-    cout << "Efficiency = " << eff << '%';
+    cout << "Efficiency = " << eff << '%' << endl;
     
-    cout << "Show back query\n";
+   /* cout << "Show back query\n";
     for (int i=0; i<OUTPUT_NODES; i++) {
 
       output_vec target = {0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f};
@@ -222,8 +215,7 @@ int main () {
       net.back_query(target);
       cout << i << endl;
       net.show_backquery(to_string(i));
-    }  
-    return 0;
+    }  */
 
     return 0;
 }
