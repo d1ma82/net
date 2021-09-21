@@ -4,9 +4,9 @@
 
 using namespace std;
 
-void rotate(cv::Mat& image) {
+void rotate(cv::Mat& image, double angle) {
 
-  cv::Mat M = cv::getRotationMatrix2D(cv::Point2f(10, 10), 40, 1.0);
+  cv::Mat M = cv::getRotationMatrix2D(cv::Point2f(10, 10), angle, 1.0);
   cv::warpAffine(image, image, M, cv::Size(image.cols, image.rows));
  // cv::imshow("-", image);
 //  cv::waitKey(0);
@@ -28,7 +28,7 @@ int main () {
       tmp /= 255;
       tmp.convertTo(input_layer, CV_32F, 0.99f, 0.001f);      
       output_vec target = {0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f};
-      target[int(data->label)] = 0.99f;
+      target[(int) data->label] = 0.99f;
 
       net.train(input_layer, target);
     }  
@@ -42,13 +42,13 @@ int main () {
 
       data = testing_data.get_next();  
       cv::Mat tmp(testing_data.cols, testing_data.rows, CV_8UC1, &data->image[0]);
-      rotate(tmp);
+   //   rotate(tmp, 30);
       tmp = tmp.reshape(0, INPUT_NODES);
       tmp /= 255;
       tmp.convertTo(input_layer, CV_32F, 0.99f, 0.001f);
       net.predict(input_layer);
 
-      if (int(data->label) == net.answear()) score.push_back(1); else score.push_back(0);
+      if ((int) data->label == net.answear()) score.push_back(1); else score.push_back(0);
 
       cout << "Correct: " << int(data->label) << " Net: " 
            << net.answear() << " : " << net.outputs() << endl;           

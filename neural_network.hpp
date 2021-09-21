@@ -12,9 +12,11 @@
 #include<opencv2/imgproc.hpp>
 #include<opencv2/highgui.hpp>
 #include<string>
+#include<map>
+#include<functional>
 
 const int INPUT_NODES = 784;        //  кол-во входящих узлов
-const int HIDDEN_NODES = 50;       //  кол-во промежуточных узлов
+const int HIDDEN_NODES = 100;       //  кол-во промежуточных узлов
 const int OUTPUT_NODES = 10;        //  кол-во исходящих узлов
 const int TRAINNIG_RECS = 600;     //  кол-во тренировочных примеров
 const int TESTING_RECS = 100;       // кол-во тестовых примеров
@@ -106,6 +108,14 @@ class NeuralNetwork {
       const output_vec ONES_O = cv::Mat(output_vec::ones());
       const hidden_vec ONES_H = cv::Mat(hidden_vec::ones());
 
+      const std::map<std::string, std::function<float (float)>> func_map {
+
+        std::make_pair("sigmoid", [] (float x) { return 1 / (1 + exp(-x)); }),
+        std::make_pair("softmax", [] (float ) { return 0.0f; }),
+        std::make_pair("ReLu", [] (float ) { return 0.0f; }),
+        std::make_pair("inv_sigmoid", [](float x) { return log(x / abs(1 - x)); })
+      };
+
       // Матрицы весовых коэффициентов связей.
       cv::Mat wih, who;
       float l_rate;
@@ -113,9 +123,15 @@ class NeuralNetwork {
       hidden_vec hidden_input, hidden_output, hidden_error; 
       output_vec final_input, final_output, output_error;
       
-        // функции активации для прямого и обратного хода
-      float sigmoid(float x) { return 1 / (1 + exp(-x)); }
-      float inv_sigmoid(float x) { return log(x / abs(1 - x)); }
+        // функции активации
+      template<typename Tp, int cn>
+      void activation_func(const cv::Vec<Tp, cn>& vec_in, 
+                                  cv::Vec<Tp, cn>& vec_out, 
+                                        const std::string func_name) {
+
+          for (int i=0; i<vec_in.rows; i++) 
+              vec_out[i] = func_map.at(func_name) (vec_in[i]);   
+      };
 };
 
 /************************************************************************************************************/
@@ -138,19 +154,17 @@ void NeuralNetwork::predict(const input_vec& layer) {
 
     // рассчитать входящие сигналы для скрытого слоя
   for (int i=0; i<wih.rows; i++)
-      hidden_input[i] = float(wih.row(i).dot(layer.t()));
+      hidden_input[i] = (float) wih.row(i).dot(layer.t());
 
   // рассчитать выходящие сигналы для скрытого слоя
-  for (int i=0; i<hidden_input.rows; i++) 
-    hidden_output[i] = sigmoid(hidden_input[i]);
+  activation_func(hidden_input, hidden_output, "sigmoid");
 
   //  рассчитать входящие сигналы для исходящего слоя
   for (int i=0; i<who.rows; i++)
-      final_input[i] = float(who.row(i).dot(hidden_output.t()));
+      final_input[i] = (float) who.row(i).dot(hidden_output.t());
 
   // рассчитать выходящие сигналы для исходящего слоя
-  for (int i=0; i<final_input.rows; i++)
-      final_output[i] = sigmoid(final_input[i]);
+  activation_func(final_input, final_output, "sigmoid");
 }
 
 void NeuralNetwork::train(const input_vec& input_layer, const output_vec& targets) {
@@ -163,7 +177,7 @@ void NeuralNetwork::train(const input_vec& input_layer, const output_vec& target
   // это output_error распределенная пропорционально весовым коэффициентам
   cv::Mat who_t = who.t();
   for (int i=0; i<who_t.rows; i++)
-    hidden_error[i] = float(who_t.row(i).dot(output_error.t()));
+    hidden_error[i] = (float) who_t.row(i).dot(output_error.t());
 
   // обновить весовые коэффициенты между скрытым и выходным слоем
   output_vec tmp_o = output_error.mul(final_output).mul(ONES_O - final_output);
@@ -182,11 +196,11 @@ void NeuralNetwork::train(const input_vec& input_layer, const output_vec& target
 
 void NeuralNetwork::back_query(const output_vec& targets) {
   
-    for (int i=0; i<final_input.rows; i++) final_input[i] = inv_sigmoid(targets[i]);
-    
+    activation_func(targets, final_input, "inv_sigmoid");
+        
     cv::Mat who_t = who.t();
     for (int i=0; i<who_t.rows; i++)
-      hidden_output[i] = float(who_t.row(i).dot(final_input.t()));
+      hidden_output[i] = (float) who_t.row(i).dot(final_input.t());
     
     double min_val, max_val;
     cv::minMaxIdx(hidden_output, &min_val, &max_val);
@@ -198,11 +212,11 @@ void NeuralNetwork::back_query(const output_vec& targets) {
       hidden_output[i] += 0.01f;
     } 
 
-    for (int i=0; i<hidden_input.rows; i++) hidden_input[i] = inv_sigmoid(hidden_output[i]);
-
+    activation_func(hidden_output, hidden_input, "inv_sigmoid");
+    
     cv::Mat wih_t = wih.t();
     for (int i=0; i<wih_t.rows; i++)
-      inputs[i] = float(wih_t.row(i).dot(hidden_input.t()));
+      inputs[i] = (float) wih_t.row(i).dot(hidden_input.t());
 
     cv::minMaxIdx(inputs, &min_val, &max_val);
     for (int i=0; i<inputs.rows; i++) {
