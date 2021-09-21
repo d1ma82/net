@@ -16,7 +16,7 @@
 const int INPUT_NODES = 784;        //  кол-во входящих узлов
 const int HIDDEN_NODES = 50;       //  кол-во промежуточных узлов
 const int OUTPUT_NODES = 10;        //  кол-во исходящих узлов
-const int TRAINNIG_RECS = 6000;     //  кол-во тренировочных примеров
+const int TRAINNIG_RECS = 600;     //  кол-во тренировочных примеров
 const int TESTING_RECS = 100;       // кол-во тестовых примеров
 
 typedef cv::Vec<float, INPUT_NODES> input_vec;
@@ -156,7 +156,7 @@ void NeuralNetwork::predict(const input_vec& layer) {
 void NeuralNetwork::train(const input_vec& input_layer, const output_vec& targets) {
 
   predict(input_layer);
-  // рассчитем ошибку
+  // рассчитем производную функции ошибку
   output_error = -(targets - final_output);
 
   // рассчитаем ошибку скрытого слоя

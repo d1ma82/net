@@ -4,6 +4,14 @@
 
 using namespace std;
 
+void rotate(cv::Mat& image) {
+
+  cv::Mat M = cv::getRotationMatrix2D(cv::Point2f(10, 10), 40, 1.0);
+  cv::warpAffine(image, image, M, cv::Size(image.cols, image.rows));
+ // cv::imshow("-", image);
+//  cv::waitKey(0);
+}
+
 int main () {
     cout << "Training with " << TRAINNIG_RECS << " records\n";
 
@@ -16,12 +24,9 @@ int main () {
     for (int i=0; i<TRAINNIG_RECS; i++) {
 
       data = training_data.get_next();
-
-      // Преобразуем картинку в формат OpenCV float Vector
       cv::Mat tmp(INPUT_NODES, 1, CV_8UC1, &data->image[0]);
       tmp /= 255;
-      tmp.convertTo(input_layer, CV_32F, 0.99f, 0.001f);
-      
+      tmp.convertTo(input_layer, CV_32F, 0.99f, 0.001f);      
       output_vec target = {0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f};
       target[int(data->label)] = 0.99f;
 
@@ -35,8 +40,10 @@ int main () {
 
     for (int i=0; i<TESTING_RECS; i++) {
 
-      data = testing_data.get_next();
-      cv::Mat tmp(INPUT_NODES, 1, CV_8UC1, &data->image[0]);
+      data = testing_data.get_next();  
+      cv::Mat tmp(testing_data.cols, testing_data.rows, CV_8UC1, &data->image[0]);
+      rotate(tmp);
+      tmp = tmp.reshape(0, INPUT_NODES);
       tmp /= 255;
       tmp.convertTo(input_layer, CV_32F, 0.99f, 0.001f);
       net.predict(input_layer);
