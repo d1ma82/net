@@ -20,7 +20,7 @@ int main () {
 
     Mnist training_data("./data/train-images.idx3-ubyte", "./data/train-labels.idx1-ubyte");
 
-    NeuralNetwork net(0.2f);
+    NeuralNetwork net(0.2);
     input_vec input_layer;
     unique_ptr<Data> data;
 
@@ -28,8 +28,8 @@ int main () {
 
       data = training_data.get_next();
       net.standartization(data->image, input_layer, std_type);    
-      output_vec target = {0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f};
-      target[(int) data->label] = 0.99f;
+      output_vec target = {0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001};
+      target[(int) data->label] = 0.99;
 
       net.train(input_layer, target);
     }  
@@ -49,10 +49,9 @@ int main () {
 
       if ((int) data->label == net.answear()) score.push_back(1); else score.push_back(0);
 
-      cout << "Correct: " << int(data->label) << " Net: " 
-           << net.answear() << " : " << net.outputs() << endl;           
+      cout << int(data->label) << ':' << net.answear() << " : " << net.outputs() << endl;           
     }  
-    float eff = (float) cv::sum(score)[0] / TESTING_RECS * 100;
+    double eff = cv::sum(score)[0] / TESTING_RECS * 100;
     cout << "Efficiency = " << eff << '%' << endl;
     
    /* cout << "Show back query\n";
