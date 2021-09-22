@@ -15,11 +15,13 @@
 #include<map>
 #include<functional>
 
+using namespace std;
+
 const int INPUT_NODES = 784;        //  кол-во входящих узлов
 const int HIDDEN_NODES = 100;       //  кол-во промежуточных узлов
 const int OUTPUT_NODES = 10;        //  кол-во исходящих узлов
-const int TRAINNIG_RECS = 600;     //  кол-во тренировочных примеров
-const int TESTING_RECS = 100;       // кол-во тестовых примеров
+const int TRAINNIG_RECS = 100;     //  кол-во тренировочных примеров
+const int TESTING_RECS = 10;       // кол-во тестовых примеров
 
 typedef cv::Vec<float, INPUT_NODES> input_vec;
 typedef cv::Vec<float, HIDDEN_NODES> hidden_vec;
@@ -62,6 +64,16 @@ class NeuralNetwork {
     */
    void back_query(const output_vec& targets);
 
+    /**
+         * Стандартизация входных данных по формуле:
+         * 
+         * хn = sqrt(sum(pow(xn - x_avg))) / sqrt(n-1)
+         * 
+         * @param inputs входящие данные с числами типа int
+         * @param input_vec& преобразованные данные типа float
+    */
+   void standartization(vector<char>& inputs, input_vec& outputs, int type=0);
+
 
     /**
          * Преобразование ответа сети в целое число
@@ -94,7 +106,7 @@ class NeuralNetwork {
          * 
          * @return результат обратного хода
     */
-   void show_backquery(const std::string& label) {
+   void show_backquery(const string& label) {
 
     cv::Mat pic(28, 28, CV_32F, &inputs[0]);
     cv::Mat resized;
@@ -110,10 +122,10 @@ class NeuralNetwork {
 
       const std::map<std::string, std::function<float (float)>> func_map {
 
-        std::make_pair("sigmoid", [] (float x) { return 1 / (1 + exp(-x)); }),
-        std::make_pair("softmax", [] (float ) { return 0.0f; }),
-        std::make_pair("ReLu", [] (float ) { return 0.0f; }),
-        std::make_pair("inv_sigmoid", [](float x) { return log(x / abs(1 - x)); })
+        make_pair("sigmoid", [] (float x) { return 1 / (1 + exp(-x)); }),
+        make_pair("softmax", [] (float ) { return 0.0f; }),
+        make_pair("ReLu", [] (float ) { return 0.0f; }),
+        make_pair("inv_sigmoid", [](float x) { return log(x / abs(1 - x)); })
       };
 
       // Матрицы весовых коэффициентов связей.
@@ -127,7 +139,7 @@ class NeuralNetwork {
       template<typename Tp, int cn>
       void activation_func(const cv::Vec<Tp, cn>& vec_in, 
                                   cv::Vec<Tp, cn>& vec_out, 
-                                        const std::string func_name) {
+                                        const string func_name) {
 
           for (int i=0; i<vec_in.rows; i++) 
               vec_out[i] = func_map.at(func_name) (vec_in[i]);   
@@ -226,4 +238,31 @@ void NeuralNetwork::back_query(const output_vec& targets) {
       inputs[i] *= 0.98f;
       inputs[i] += 0.01f;
     }
+}
+
+void NeuralNetwork::standartization(vector<char>& input_data, input_vec& outputs, int type) {
+
+  cv::Mat tmp(INPUT_NODES, 1, CV_8UC1, &input_data[0]);
+  switch (type) {
+
+    case 1: {
+        float x_avg = (float) cv::sum(input_data)[0] / input_data.capacity();
+        float s = 0.0f;
+        for (auto x : input_data) s += (float) pow(x - x_avg, 2);
+        float dev = (float) sqrt(s) / sqrt(input_data.capacity() - 1.0f);
+        for (int i=0; i<INPUT_NODES; i++) {
+
+          outputs[i] = (input_data[i] - x_avg) / dev;
+        }
+      break;
+    }
+    case 2:
+        cv::normalize(tmp, outputs, 1.0, 0.0, cv::NORM_INF);
+        break;
+    default:
+      tmp /= 255;
+      tmp.convertTo(outputs, CV_32F, 0.99f, 0.001f);   
+  }
+
+  //cout << outputs << endl;
 }

@@ -13,6 +13,9 @@ void rotate(cv::Mat& image, double angle) {
 }
 
 int main () {
+
+    int std_type = 2;
+
     cout << "Training with " << TRAINNIG_RECS << " records\n";
 
     Mnist training_data("./data/train-images.idx3-ubyte", "./data/train-labels.idx1-ubyte");
@@ -24,15 +27,12 @@ int main () {
     for (int i=0; i<TRAINNIG_RECS; i++) {
 
       data = training_data.get_next();
-      cv::Mat tmp(INPUT_NODES, 1, CV_8UC1, &data->image[0]);
-      tmp /= 255;
-      tmp.convertTo(input_layer, CV_32F, 0.99f, 0.001f);      
+      net.standartization(data->image, input_layer, std_type);    
       output_vec target = {0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f};
       target[(int) data->label] = 0.99f;
 
       net.train(input_layer, target);
     }  
-    cout << "Training ok\n";
 
     cout << "Testing with " << TESTING_RECS << " records\n";
     vector<int> score(TESTING_RECS);
@@ -41,11 +41,10 @@ int main () {
     for (int i=0; i<TESTING_RECS; i++) {
 
       data = testing_data.get_next();  
-      cv::Mat tmp(testing_data.cols, testing_data.rows, CV_8UC1, &data->image[0]);
-   //   rotate(tmp, 30);
+      net.standartization(data->image, input_layer, std_type);
+  /*  rotate(tmp, 30);
       tmp = tmp.reshape(0, INPUT_NODES);
-      tmp /= 255;
-      tmp.convertTo(input_layer, CV_32F, 0.99f, 0.001f);
+  */
       net.predict(input_layer);
 
       if ((int) data->label == net.answear()) score.push_back(1); else score.push_back(0);
