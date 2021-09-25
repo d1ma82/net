@@ -153,6 +153,18 @@ class NeuralNetwork {
           for (int i=0; i<cm; i++)
             vec_out[i] = matrix.row(i).dot(vec);
       };
+
+        // Произведение векторов разной длины
+      template<typename Tp, int cn, int cm>
+      void dot(const cv::Vec<Tp, cn>& vec_a, 
+                      const cv::Vec<Tp, cm>& vec_b, 
+                          const double koef, cv::Mat& mat_out) {
+
+          for (int i=0; i<cn; i++) {
+            for (int j=0; j<cm; j++)
+              mat_out.at<double>(i, j) = koef * vec_a[i] * vec_b[j];
+          }
+      };
 };
 
 /************************************************************************************************************/
@@ -197,18 +209,14 @@ void NeuralNetwork::train(const input_vec& input_layer, const output_vec& target
   dot(who.t(), output_error.t(), hidden_error);
 
   // обновить весовые коэффициенты между скрытым и выходным слоем
-  output_vec tmp_o = output_error.mul(final_output).mul(ONES_O - final_output);
-  for (int i=0; i<OUTPUT_NODES; i++) {
-    for (int j=0; j<HIDDEN_NODES; j++)
-        who.at<double>(i, j) -= l_rate * tmp_o[i] * hidden_output[j];
-  };
+  cv::Mat tmp_oh(OUTPUT_NODES, HIDDEN_NODES, CV_64F);
+  dot(output_error.mul(final_output).mul(ONES_O-final_output), hidden_output, l_rate, tmp_oh);
+  who -= tmp_oh;
 
   // обновить весовые коэффициенты между входным и скрытым слоем
-  hidden_vec tmp_h = hidden_error.mul(hidden_output).mul(ONES_H - hidden_output);
-  for (int i=0; i<HIDDEN_NODES; i++) {
-    for (int j=0; j<INPUT_NODES; j++)
-        wih.at<double>(i, j) -= l_rate * tmp_h[i] * input_layer[j];
-  };
+  cv::Mat tmp_hi(HIDDEN_NODES, INPUT_NODES, CV_64F);
+  dot(hidden_error.mul(hidden_output).mul(ONES_H-hidden_output), input_layer, l_rate, tmp_hi);
+  wih -= tmp_hi;
 }
 
 void NeuralNetwork::back_query(const output_vec& targets) {
