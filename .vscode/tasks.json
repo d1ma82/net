@@ -12,7 +12,8 @@
 				"/Fe:",
 				"${fileDirname}\\${fileBasenameNoExtension}.exe",
 				"${file}",
-				"opencv_core453.lib"
+				"opencv_core453.lib", "opencv_imgcodecs453.lib", "opencv_imgproc453.lib",
+                 "opencv_highgui453.lib"
 			],
 			"options": {
 				"cwd": "${fileDirname}"

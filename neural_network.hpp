@@ -20,8 +20,8 @@ using namespace std;
 const int INPUT_NODES = 784;        //  кол-во входящих узлов
 const int HIDDEN_NODES = 100;       //  кол-во промежуточных узлов
 const int OUTPUT_NODES = 10;        //  кол-во исходящих узлов
-const int TRAINNIG_RECS = 100;     //  кол-во тренировочных примеров
-const int TESTING_RECS = 10;       // кол-во тестовых примеров
+const int TRAINNIG_RECS = 600;     //  кол-во тренировочных примеров
+const int TESTING_RECS = 100;       // кол-во тестовых примеров
 
 typedef cv::Vec<double, INPUT_NODES> input_vec;
 typedef cv::Vec<double, HIDDEN_NODES> hidden_vec;
@@ -35,6 +35,7 @@ class NeuralNetwork {
          * Создает новый экземпляр нейронной сети
          *
          * @param double learning_rate - шаг обучения в методе градиентного спуска
+         
     */
     NeuralNetwork(double learning_rate);
    ~NeuralNetwork() {};
@@ -93,9 +94,9 @@ class NeuralNetwork {
          * 
          * @return вектор вероятностей ответов
     */
-   std::string outputs() {
+   string outputs() {
 
-     std::stringstream str;
+     stringstream str;
      str << final_output;
      return str.str();
    }
@@ -120,7 +121,7 @@ class NeuralNetwork {
       const output_vec ONES_O = cv::Mat(output_vec::ones());
       const hidden_vec ONES_H = cv::Mat(hidden_vec::ones());
 
-      const std::map<std::string, std::function<double (double)>> func_map {
+      const std::map<string, function<double (double)>> func_map {
 
         make_pair("sigmoid", [] (double x) { return 1 / (1 + exp(-x)); }),
         make_pair("softmax", [] (double ) { return 0.0f; }),
@@ -141,8 +142,16 @@ class NeuralNetwork {
                                   cv::Vec<Tp, cn>& vec_out, 
                                         const string func_name) {
 
-          for (int i=0; i<vec_in.rows; i++) 
+          for (int i=0; i<cn; i++) 
               vec_out[i] = func_map.at(func_name) (vec_in[i]);   
+      };
+      
+      // Векторное произведение матрицы и вектора
+      template<typename Tp, int cn, int cm>
+      void dot(const cv::Mat& matrix, const cv::Matx<Tp, 1, cn>& vec, cv::Vec<Tp, cm>& vec_out) {
+
+          for (int i=0; i<cm; i++)
+            vec_out[i] = matrix.row(i).dot(vec);
       };
 };
 
@@ -164,16 +173,14 @@ NeuralNetwork::NeuralNetwork(double learning_rate) {
 
 void NeuralNetwork::predict(const input_vec& layer) {
 
-    // рассчитать входящие сигналы для скрытого слоя
-  for (int i=0; i<wih.rows; i++)
-      hidden_input[i] = wih.row(i).dot(layer.t());
+       // рассчитать входящие сигналы для скрытого слоя
+  dot(wih, layer.t(), hidden_input);
 
   // рассчитать выходящие сигналы для скрытого слоя
   activation_func(hidden_input, hidden_output, "sigmoid");
 
   //  рассчитать входящие сигналы для исходящего слоя
-  for (int i=0; i<who.rows; i++)
-      final_input[i] = who.row(i).dot(hidden_output.t());
+  dot(who, hidden_output.t(), final_input);
 
   // рассчитать выходящие сигналы для исходящего слоя
   activation_func(final_input, final_output, "sigmoid");
@@ -187,22 +194,20 @@ void NeuralNetwork::train(const input_vec& input_layer, const output_vec& target
 
   // рассчитаем ошибку скрытого слоя
   // это output_error распределенная пропорционально весовым коэффициентам
-  cv::Mat who_t = who.t();
-  for (int i=0; i<who_t.rows; i++)
-    hidden_error[i] = who_t.row(i).dot(output_error.t());
+  dot(who.t(), output_error.t(), hidden_error);
 
   // обновить весовые коэффициенты между скрытым и выходным слоем
   output_vec tmp_o = output_error.mul(final_output).mul(ONES_O - final_output);
-  for (int i=0; i<tmp_o.rows; i++) {
-    for (int j=0; j<hidden_output.rows; j++)
-        who.at<double>(i, j) -= l_rate * (tmp_o[i] * hidden_output[j]);
+  for (int i=0; i<OUTPUT_NODES; i++) {
+    for (int j=0; j<HIDDEN_NODES; j++)
+        who.at<double>(i, j) -= l_rate * tmp_o[i] * hidden_output[j];
   };
 
   // обновить весовые коэффициенты между входным и скрытым слоем
   hidden_vec tmp_h = hidden_error.mul(hidden_output).mul(ONES_H - hidden_output);
-  for (int i=0; i<tmp_h.rows; i++) {
-    for (int j=0; j<input_layer.rows; j++)
-        wih.at<double>(i, j) -= l_rate * (tmp_h[i] * input_layer[j]);
+  for (int i=0; i<HIDDEN_NODES; i++) {
+    for (int j=0; j<INPUT_NODES; j++)
+        wih.at<double>(i, j) -= l_rate * tmp_h[i] * input_layer[j];
   };
 }
 
@@ -211,7 +216,7 @@ void NeuralNetwork::back_query(const output_vec& targets) {
     activation_func(targets, final_input, "inv_sigmoid");
         
     cv::Mat who_t = who.t();
-    for (int i=0; i<who_t.rows; i++)
+    for (int i=0; i<HIDDEN_NODES; i++)
       hidden_output[i] = who_t.row(i).dot(final_input.t());
     
     double min_val, max_val;
@@ -227,7 +232,7 @@ void NeuralNetwork::back_query(const output_vec& targets) {
     activation_func(hidden_output, hidden_input, "inv_sigmoid");
     
     cv::Mat wih_t = wih.t();
-    for (int i=0; i<wih_t.rows; i++)
+    for (int i=0; i<INPUT_NODES; i++)
       inputs[i] = wih_t.row(i).dot(hidden_input.t());
 
     cv::minMaxIdx(inputs, &min_val, &max_val);

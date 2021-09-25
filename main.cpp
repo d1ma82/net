@@ -20,7 +20,7 @@ int main () {
 
     Mnist training_data("./data/train-images.idx3-ubyte", "./data/train-labels.idx1-ubyte");
 
-    NeuralNetwork net(0.2);
+    NeuralNetwork net(0.1);
     input_vec input_layer;
     unique_ptr<Data> data;
 

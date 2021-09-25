@@ -6,4 +6,4 @@ set libs=/link opencv_core453.lib opencv_imgcodecs453.lib opencv_imgproc453.lib 
 
 %compiler% %arg% %src% %libs%
 
-main.exe
+#main.exe
