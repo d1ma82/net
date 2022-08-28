@@ -1,0 +1,16 @@
+type idx3-ubyte
+count 10
+thread1 [
+./mnist/digits/0.idx3-ubyte
+./mnist/digits/1.idx3-ubyte
+./mnist/digits/2.idx3-ubyte
+./mnist/digits/3.idx3-ubyte
+./mnist/digits/4.idx3-ubyte
+]
+thread2 [
+./mnist/digits/5.idx3-ubyte
+./mnist/digits/6.idx3-ubyte
+./mnist/digits/7.idx3-ubyte
+./mnist/digits/8.idx3-ubyte
+./mnist/digits/9.idx3-ubyte
+]

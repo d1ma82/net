@@ -1,0 +1,7 @@
+/build
+/db
+/.vscode
+*.exe
+*.yml
+/test/build
+/test/*.exe
