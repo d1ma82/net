@@ -10,6 +10,9 @@
 
 using namespace std;
 
+// Когда используешь в контейнерах, обрати внимание, что при условных проверках
+// проверяются указатели, а не строки!
+
 static const char* QUIT=		"quit";
 static const char* CREATE=		"create";
 static const char* TRAIN=       "train";
@@ -20,27 +23,23 @@ static const char* SAVE=        "save";
 static const char* LOAD=		"load";
 static const char  REM=			'#';
 
-static map<const char*, const char*> helper{
-	make_pair(CREATE, "Use: create int input int hidden int final float rate"),
-	make_pair(TRAIN, "Use: train int records int epochs"),
-	make_pair(QUERY, "Use: query int records"),
-	make_pair(REPO, "Use: repo str type ... str images ... [str labels]")
+static const map<const char*, const char*> helper{
+	make_pair(CREATE, "use: create int input int hidden int final float rate"),
+	make_pair(TRAIN, "use: train int records int epochs"),
+	make_pair(QUERY, "use: query int records"),
+	make_pair(REPO, "use: repo str type ... str images ... [str labels]")
 };
-
-static void validate_path(string& path) {
-	replace(path.begin(), path.end(), '\\', '/');
-}
 
 template<typename T> T get(const char* command, ostream& output, istringstream& istr, bool throw_on_eof=false) {
 	
 	// TODO: Неправильно работает в случае: "create 784 100 10 " когда есть пробел в конце
-	if (throw_on_eof and istr.eof()) error(ER_SYNTAX, helper[command]);
+	if (throw_on_eof and istr.eof()) error(ER_SYNTAX, helper.at(command));
 	
-	T t{}; istr>>t;
+	T t; istr>>t;
 	
 	if (istr.fail() and not istr.eof()) {
 		istr.clear();
-		error(ER_SYNTAX, helper[command]);
+		error(ER_SYNTAX, helper.at(command));
 	}
 	return t;
 }
@@ -50,7 +49,7 @@ private:
 	NeuroNetTrainer* trainer{nullptr};
 	istream& input;
 	ostream& output;
-	
+		
 	void command_print() {
 		if (trainer==nullptr) error(ER_NULLPTR, "command_print, trainer==nullptr");
 		LOGI(output, *trainer)
@@ -73,7 +72,7 @@ private:
 		
 		do {
 			string type = get<string>(REPO, output, istr);
-			if (type!="type" and type!="images") error(ER_SYNTAX, helper[REPO]);
+			if (not repo::valid(type)) error(ER_SYNTAX, helper.at(REPO));
 			
 			string val = get<string>(REPO, output, istr);
 			trainer->repo_config_append(type+' '+val);			
@@ -149,7 +148,7 @@ public:
 			catch(runtime_error& ex) {LOGI(output, ex.what()) continue;}
 			LOGI(output, "> ")
 		}
-		return EoF;
+		return OK;
 	}
 	
 	~Interpreter() {if (trainer) delete trainer;}

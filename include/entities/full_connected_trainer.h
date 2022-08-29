@@ -55,13 +55,12 @@ public:
 		repo::Repo repo(ostr, repo_config);
 		
 		if (records <= 0 or records > repo->total()) records = repo->total();
-		
+		LOG(ostr, "Begin train "<<records<<" recs\n")
 		int ep=epochs; int k=0;
 		auto t1 = chrono::system_clock::now();
 		while (epochs-- > 0) {
 			for (int n=0; n<records; n++) {
-			
-				if (n == repo->total()) {records=n; break;}		
+					
 				const Data& next = repo->get_next();
 				net->train(&next.image[0], next.label);
 				stat.read++;
@@ -73,6 +72,7 @@ public:
 		stat.total_records += stat.records;
 		stat.time = chrono::duration_cast<chrono::milliseconds>(t2-t1).count();
 		stat.total_time += stat.time;
+		LOG(ostr, "End train\n")
     }
 
     void query(int records) {
@@ -85,7 +85,6 @@ public:
 	
 		for (int n=0; n<records; n++) {
 		
-			if (n==repo->total()) {records=n; break;}
 			const Data& next = repo->get_next();
 			auto result = net->query(&next.image[0])->maxI();
 			digits[(int)next.label]++; 

@@ -70,8 +70,11 @@ inline void help(const char* why){cout<<why<<'\n'<<help_str<<endl;}
 		// net -fc -f D:\git\cpp\net\db\idx3\conf1.txt
 		// net -p -fc -f D:\git\cpp\net\db\idx3\conf1.txt
 		// net -p -fc -f D:\git\cpp\net\db\idx3\conf1.txt D:\git\cpp\net\db\idx3\conf2.txt
+		// net -fc -f D:\git\cpp\net\db\picture\conf.txt
+
 int main(int argc, char* argv[]) {		
 	
+	int result=0;
 	if (argc==1)run_command_mode<fc_matrix>();
 
 	else if (argc==2) {
@@ -84,7 +87,7 @@ int main(int argc, char* argv[]) {
 
 		if (strcmp(argv[1], "-fc")==0) 
 			if (strcmp(argv[2], "-f")==0) 
-				return run_file_mode<fc_matrix>(argv[3], cout);	
+				result = run_file_mode<fc_matrix>(argv[3], cout);	
 			else help(argv[2]);
 		else help(argv[1]);		
 	} 
@@ -109,4 +112,5 @@ int main(int argc, char* argv[]) {
 		else help(argv[1]);
 	}
 	else help("wrong number of argc");
+	LOGI(cout, "program end: "<<result<<endl)
 }

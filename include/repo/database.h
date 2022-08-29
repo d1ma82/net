@@ -10,7 +10,7 @@ struct Data {
 	
 	uint32_t rows {0};
     uint32_t cols {0};
-    unsigned char label = '\0';
+    char label = '\0';
     std::vector<unsigned char> image;
 	
 	void print(std::ostream& ostr) const {
@@ -19,7 +19,7 @@ struct Data {
 			LOGI(ostr, "No data\n");
 			return;
 		}
-		LOGI(ostr, "label: "<<int(label)<<"; size: "<<rows<<'x'<<cols<<'\n')
+		LOGI(ostr, "label: "<<label<<"; size: "<<rows<<'x'<<cols<<'\n')
 		for (int i=0; i<rows; i++) {
 			for (int j=0; j<cols; j++)
 				{LOGI(ostr, int(image[i*cols+j])<<',')}

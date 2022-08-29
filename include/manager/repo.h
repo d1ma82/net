@@ -8,9 +8,15 @@ namespace repo{
 	
 const char* MNIST 	= "mnist";
 const char* IDX3 	= "idx3";
+const char* PICS	= "picture";
 const char* TYPE	= "type";
 const char* IMAGES 	= "images";
 const char* LABELS 	= "labels";
+
+inline bool valid(const string command) {
+
+	return command==TYPE or command==IMAGES or command==LABELS;
+}
 
 typedef std::map<string, string> config;
 
@@ -21,16 +27,19 @@ private:
 public:
 	Repo (ostream& ostr, const config& conf) {
 		if (conf.empty()) {
-			error(ERROR, "No repo configuration.");
+			error(ERROR, "No repo configuration.\n");
 		}
-		else if (strcmp(conf.at(TYPE).c_str(), MNIST)==0) {
+		else if (conf.at(TYPE)==MNIST) {
 			database= new Mnist(ostr, conf.at(IMAGES).c_str(), conf.at(LABELS).c_str());
 		}
-		else if (strcmp(conf.at(TYPE).c_str(), IDX3)==0) {
+		else if (conf.at(TYPE)==IDX3) {
 			database = new Mnist(ostr, conf.at(IMAGES).c_str());
+		}
+		else if (conf.at(TYPE)==PICS) {
+			database = new Pictures(ostr, conf.at(IMAGES).c_str());
 		} 		
 		else {
-			error(ERROR, "Unknown database type.");
+			error(ERROR, "Unknown database type.\n");
 		}
 	}
 		
@@ -39,7 +48,7 @@ public:
 	}
 	
 	inline Database* operator->() { 
-		if (!database) error(ER_NULLPTR, "Database* operator->, database==nullptr");
+		if (!database) error(ER_NULLPTR, "Database* operator->, database==nullptr\n");
 		return database;
 	}
 };

@@ -1,4 +1,6 @@
 #pragma once
+
+#include <string>
 #include <iostream>
 #include <iomanip>
 #include <chrono>
@@ -10,6 +12,18 @@ inline void error(int code, const char* s) {
 	std::stringstream str;
 	str<<code<<". "<<s;
 	throw std::runtime_error(str.str());
+}
+
+inline std::string lower(const std::string str) {
+	
+	std::string result;
+	result.resize(str.length());
+	for (int i=0; auto ch: str) result[i++]=tolower(ch);
+	return result;
+}
+
+inline void validate_path(std::string& path) {
+	std::replace(path.begin(), path.end(), '\\', '/');
 }
 
 #define LOGE(msg) std::cerr<<"ERR: "<<msg;

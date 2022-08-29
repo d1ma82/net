@@ -71,7 +71,7 @@ Mnist::Mnist (ostream& ostr, const char* image_file_name) {
 	data.rows = rows;
 	data.cols = cols;
 	data.image.resize(rows*cols);
-	data.label = img_file.filename().c_str()[0];
+	data.label = img_file.stem().string()[0];
 	LOGI(ostr, "IDX3: "<<num_images<<" recs, "<<rows<<'x'<<cols<<", label: "<<data.label<<'\n')
 }
 

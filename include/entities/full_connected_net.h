@@ -68,7 +68,7 @@ template<MatrixConcept Matrix> struct Net {
 		return final_output;
 	}
 	
-	void train(const uchar* input_data, int target) {
+	void train(const uchar* input_data, char target) {
 		
 		int i=0;
 		std::for_each(&input_data[0], &input_data[input->rows], [&](auto k) {input->data[i++]=scale(k);});
