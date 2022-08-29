@@ -107,19 +107,20 @@ private:
 	void command_save(istringstream& istr) {
 		
 		if (trainer==nullptr) error(ER_NULLPTR, "command_save, trainer==nullptr");
-		const char* format="yml";
-		io::IO<typename NeuroNetTrainer::value_type> io(format);
+		filesystem::path filename; istr>>filename;
+		io::IO<typename NeuroNetTrainer::value_type> io(filename);
 		io->save(trainer->get());
 		LOGI(output, "Net saved.\n")
 	}
 	void command_load(istringstream& istr) {
 		
-		if (trainer==nullptr) error(ER_NULLPTR, "command_load, trainer==nullptr");
-		const char* format="yml";
-		io::IO<typename NeuroNetTrainer::value_type> io(format);
+		if (trainer!=nullptr) error(ERROR, "Warn, clear before load, trainer!=nullptr\n");
+		trainer = new NeuroNetTrainer(output);
+		filesystem::path filename; istr>>filename;
+		io::IO<typename NeuroNetTrainer::value_type> io(filename);
 		Net<typename NeuroNetTrainer::value_type>& net = io->load();
 		trainer->set(net);
-		LOGI(output, net)
+		LOGI(output, net<<' '<<"loaded."<<'\n')
 	}
 	
 public:

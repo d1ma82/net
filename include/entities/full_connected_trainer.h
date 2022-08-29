@@ -42,6 +42,8 @@ private:
 public:
 	using value_type=Matrix;
 	
+	FullConnectedTrainer(ostream& ostr):ostr{ostr} {};
+
     FullConnectedTrainer(ostream& ostr, int input_nodes, int hidden_nodes, int final_nodes, double lr): ostr{ostr} {
         
         is_valid(input_nodes, hidden_nodes, final_nodes, lr);

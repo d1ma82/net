@@ -12,11 +12,16 @@ protected:
 	Saver(){};
 };
 
+
 template<class Matrix> class YMLsaver: public Saver<Matrix> {
+private: 
+	const char* path;
 public:	
+	YMLsaver(const char* path):path{path} {}
+
 	void save(const Net<Matrix>& net) final {
 	
-		cv::FileStorage fs("net.yml", cv::FileStorage::WRITE);
+		cv::FileStorage fs(path, cv::FileStorage::WRITE);
 		fs << "lr" << net.learning_rate 
 		   << "input_nodes" << net.input_nodes() 
 		   << "hidden_nodes" << net.hidden_nodes()
@@ -35,7 +40,7 @@ public:
 		double lr;
 		int input_nodes, hidden_nodes, final_nodes;
 		cv::Mat cv_hidden_weights, cv_final_weights;
-		cv::FileStorage fs("net.yml", cv::FileStorage::READ);
+		cv::FileStorage fs(path, cv::FileStorage::READ);
 		if (not fs.isOpened()) {LOGE("Could not load net.\n") throw ERROR;}
 		
 		fs["lr"] >> lr;
