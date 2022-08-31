@@ -11,13 +11,6 @@ constexpr double delta = 0.00000001;
 
 typedef unsigned char uchar;
 
-template<typename M> concept MatrixConcept=requires(M m) {
-	typename M::value_type; 
-	typename M::iterator_type;
-	//{begin(m)}-> void*;
-	//{end}
-};
-
 template<MatrixConcept Matrix> struct Net {
 	
 	using Mat=std::unique_ptr<Matrix>;

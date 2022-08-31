@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iterator>
+#include <vector>
 #include <numeric>
 #include "globals.h"
 
@@ -8,34 +10,43 @@ constexpr double e 	  = 2.71828183;
 template<typename T> struct Matrix {
 	
 	using value_type=T;
-	using iterator_type=T*;
-	
+	using iterator=T*;
+
 	int rows, cols;
 	T* data;
-	
+
 	Matrix(): cols{0}, rows{0}, data{nullptr}{}
-	Matrix(int rows, int cols): rows{rows}, cols{cols}{data=new T[rows*cols];}
+	Matrix(int rows, int cols): rows{rows}, cols{cols} {data=new T[rows*cols];}
 	Matrix(int rows, int cols, T* data): rows{rows}, cols{cols}, data{data}{}
 	
-	~Matrix(){
+	~Matrix() {if (data) delete[] data;}
 
-		if (data) {
-			//LOG("%s; Delete %d x %d \n", "LOG: " __FILE__, rows, cols)
-			delete[] data;
-			data = nullptr;
-		}
-	}
-	
+	inline size_t size() const {return rows*cols;}
 	inline T& operator[](int index) {return data[index];}
 	inline const T& operator[](int index) const {return data[index];} // for constant references
-	int maxI() {
+
+	int maxI() const {
 		
 		T* max_el = max_element(&data[0], &data[size()]);
 		return size() - (&data[size()] - max_el);
 	}
-	inline size_t size() const {return rows*cols;}
-	iterator_type begin() {return &data[0];}
-	iterator_type end() {return &data[rows*cols];}
+	
+	vector<iterator> get_row(int row) {
+
+		vector<iterator> res(cols);
+		for (int offcet=0; auto& r:res) r=&data[row*cols]+offcet++;
+		return move(res);
+	}
+
+	vector<iterator> get_col(int col) {
+
+		vector<iterator> res(rows);
+		for (int offcet=0; auto& r:res) {r=&data[col]+offcet; offcet+=cols;}
+		return move(res);
+	}
+
+	const iterator begin() const {return &data[0];}
+	const iterator end() const {return &data[size()];}
 }; 
 
 template<typename T> using Mat=std::unique_ptr<Matrix<T>>;
@@ -46,17 +57,23 @@ template<typename T> void Not_Compatible(const Matrix<T>& A, const Matrix<T>& B,
 	error(ER_RANGE, str.str().c_str());
 }
 
-template<typename T> std::ostream& operator <<(std::ostream& os, const Mat<T>& mat) {
+template<typename T> std::ostream& operator <<(std::ostream& os, const Matrix<T>& mat) {
 	
-	const Matrix<T>& matr = *mat;
-	if (not matr.data) return os << "No data\n";
-	for (int i=0; i<matr.rows; i++) {
-		for (int j=0; j<matr.cols; j++) {
+	if (not mat.data) return os << "No data\n";
+	for (int i=0; i<mat.rows; i++) {
+		for (int j=0; j<mat.cols; j++) {
 		
-			os << matr[i*matr.cols+j] << ", ";
+			os << mat[i*mat.cols+j] << ", ";
 		}
 		os << '\n';
 	}
+	return os;
+}
+
+template<typename T> std::ostream& operator <<(std::ostream& os, const Mat<T>& mat) {
+	
+	const Matrix<T>& matr = *mat;
+	os<<matr;
 	return os;
 }
 

@@ -4,6 +4,7 @@
 #include <thread>
 
 #include "manager/interpreter.h"
+#include "test/test.h"
 
 using namespace std;
 
@@ -55,6 +56,11 @@ template<class NeuroNetTrainer>
 	LOG(cout, "Exit\n")
 }
 
+void run_tests() {
+
+	test_matrices();
+}
+
 const char* help_str = {
 	"net <-p> -fc <-f file> <-fs file1 file 2 ...> # launch full connected net, and use configuration located in file\n"
 	"-fc 	full connected net\n"
@@ -65,8 +71,7 @@ const char* help_str = {
 
 inline void help(const char* why){cout<<why<<'\n'<<help_str<<endl;}
 
-		// net -f C:\dima\code\net\db\idx3\conf1.txt
-		// net -f C:\dima\code\net\db\mnist\conf.txt
+
 		// net -fc -f D:\git\cpp\net\db\idx3\conf1.txt
 		// net -p -fc -f D:\git\cpp\net\db\idx3\conf1.txt
 		// net -p -fc -f D:\git\cpp\net\db\idx3\conf1.txt D:\git\cpp\net\db\idx3\conf2.txt
@@ -81,6 +86,7 @@ int main(int argc, char* argv[]) {
 
 		if (strcmp(argv[1], "-h")==0) help("");
 		else if (strcmp(argv[1], "-fc")==0) run_command_mode<fc_matrix>();
+		else if (strcmp(argv[1], "-test")==0) run_tests();
 		else help(argv[1]);
 	} 
 	else if (argc==4) {
