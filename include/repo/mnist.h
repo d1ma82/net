@@ -24,7 +24,6 @@ private:
 		ofstream split_label;
 		
 		Data data;
-		bool create_dir(const string& dir); 
 		bool detect_files(const string& config);
 public:
 	/**
@@ -44,9 +43,9 @@ public:
 		return data;
 	}
 	
-	void split (int blocks, int& counter) final;
+	void separate () final;
 		// digits D:\git\cpp\net\mnist\train
-	void separate() final;
+	void prepare(int, int, const string&) final {};
 		
    ~Mnist() {
 	   if (conf.is_open()) conf.close();

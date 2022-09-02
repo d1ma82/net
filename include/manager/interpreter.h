@@ -1,27 +1,25 @@
 #pragma once
 
-#include <map>
-#include <sstream>
 #include <functional>
 #include "entities/full_connected_trainer.h"
 #include "manager/io.h"
 #include "utils/matrix.h"
-#include "globals.h"
 
 using namespace std;
 
 // Когда используешь в контейнерах, обрати внимание, что при условных проверках
 // проверяются указатели, а не строки!
 
-static const char* QUIT=		"quit";
-static const char* CREATE=		"create";
-static const char* TRAIN=       "train";
-static const char* QUERY=		"query";
-static const char* REPO=		"repo";
-static const char* PRINT=		"print";
-static const char* SAVE=        "save";
-static const char* LOAD=		"load";
-static const char  REM=			'#';
+const char* QUIT=		"quit";
+const char* CREATE=		"create";
+const char* TRAIN=       "train";
+const char* QUERY=		"query";
+const char* REPO=		"repo";
+const char* PRINT=		"print";
+const char* SAVE=        "save";
+const char* LOAD=		"load";
+const char  REM=		'#';
+const char* PREP=		"prepare";
 
 static const map<const char*, const char*> helper{
 	make_pair(CREATE, "use: create int input int hidden int final float rate"),
@@ -30,14 +28,14 @@ static const map<const char*, const char*> helper{
 	make_pair(REPO, "use: repo str type ... str images ... [str labels]")
 };
 
-template<typename T> T get(const char* command, ostream& output, istringstream& istr, bool throw_on_eof=false) {
-	
-	// TODO: Неправильно работает в случае: "create 784 100 10 " когда есть пробел в конце
-	if (throw_on_eof and istr.eof()) error(ER_SYNTAX, helper.at(command));
-	
+template<typename T> T get(const char* command, ostream& ostr, istringstream& istr) {
+		
 	T t; istr>>t;
 	
-	if (istr.fail() and not istr.eof()) {
+	if (istr.eof()) {
+		LOG(ostr, command<< " EOF\n")
+	}
+	else if (istr.fail()) {
 		istr.clear();
 		error(ER_SYNTAX, helper.at(command));
 	}
@@ -49,6 +47,7 @@ private:
 	NeuroNetTrainer* trainer{nullptr};
 	istream& input;
 	ostream& output;
+	config conf;
 		
 	void command_print() {
 		if (trainer==nullptr) error(ER_NULLPTR, "command_print, trainer==nullptr");
@@ -57,35 +56,34 @@ private:
 
 	void command_create(istringstream& istr) {
 		
-		int input_nodes=  get<int>(CREATE, output, istr, true);
-		int hidden_nodes= get<int>(CREATE, output, istr, true);
-		int final_nodes=  get<int>(CREATE, output, istr, true);
-		double lr=		  get<double>(CREATE, output, istr, true);
+		int input_nodes=  get<int>(CREATE, output, istr);
+		int hidden_nodes= get<int>(CREATE, output, istr);
+		int final_nodes=  get<int>(CREATE, output, istr);
+		double lr=		  get<double>(CREATE, output, istr);
 		
 		trainer= new NeuroNetTrainer(output, input_nodes, hidden_nodes, final_nodes, lr);
 		LOGI(output, trainer->get())
 	}
 
 	void command_repo(istringstream& istr) {
-
-		if (trainer==nullptr) error(ER_NULLPTR, "command_repo, trainer==nullptr");
 		
+		conf.clear();		
 		do {
 			string type = get<string>(REPO, output, istr);
 			if (not repo::valid(type)) error(ER_SYNTAX, helper.at(REPO));
 			
-			string val = get<string>(REPO, output, istr);
-			trainer->repo_config_append(type+' '+val);			
+			string value = get<string>(REPO, output, istr);
+			conf[type] = value;			
 		} while (not istr.eof());
 	}
 
 	void command_train(istringstream& istr) {
 		
 		if (trainer==nullptr) error(ER_NULLPTR, "command_train, trainer==nullptr");
-		int records= get<int>(TRAIN, output, istr, true);
-		int epochs=  get<int>(TRAIN, output, istr, true);
+		int records= get<int>(TRAIN, output, istr);
+		int epochs=  get<int>(TRAIN, output, istr);
 
-		trainer->train(records, epochs, [&](int total, int read) {
+		trainer->train(records, epochs, conf, [&](int total, int read) {
 			// Сколько звездочек?
 			const int LEN=50;
 			float stars=float(read)/total;
@@ -99,8 +97,8 @@ private:
 	void command_query(istringstream& istr) {
 		
 		if (trainer==nullptr) error(ER_NULLPTR, "command_query, trainer==nullptr");
-		int records= get<int>(QUERY, output, istr, true);
-		trainer->query(records);
+		int records= get<int>(QUERY, output, istr);
+		trainer->query(records, conf);
 	}
 
 	void command_save(istringstream& istr) {
@@ -120,6 +118,14 @@ private:
 		Net<typename NeuroNetTrainer::value_type>& net = io->load();
 		trainer->set(net);
 		LOGI(output, net<<' '<<"loaded."<<'\n')
+	}
+	void command_prepare(istringstream& istr) {
+
+		int w= get<int>(PREP, output, istr);
+		int h= get<int>(PREP, output, istr);
+		string where= get<string>(PREP, output, istr);
+		repo::Repo repo(output, conf);
+		repo->prepare(w, h, where.c_str());
 	}
 	
 public:
@@ -143,6 +149,7 @@ public:
 				else if (command == QUERY) command_query(istr);
 				else if (command == SAVE) command_save(istr);
 				else if (command == LOAD) command_load(istr);
+				else if (command == PREP) command_prepare(istr);
 				else error(ER_COMMAND, "Unknown command.\n");
 			}
 			catch(runtime_error& ex) {LOGI(output, ex.what()) continue;}

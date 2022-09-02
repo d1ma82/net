@@ -1,6 +1,5 @@
 #pragma once
 
-#include <map>
 #include "repo/mnist.h"
 #include "repo/picture.h"
 
@@ -17,8 +16,6 @@ inline bool valid(const string command) {
 
 	return command==TYPE or command==IMAGES or command==LABELS;
 }
-
-typedef std::map<string, string> config;
 
 class Repo {
 	

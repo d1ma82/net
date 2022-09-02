@@ -3,7 +3,6 @@
 #include <iterator>
 #include <vector>
 #include <numeric>
-#include "globals.h"
 
 constexpr double e 	  = 2.71828183;
 

@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include "globals.h"
-
 struct Data {	
 	
 	Data(){}
@@ -33,8 +32,8 @@ public:
 	virtual ~Database()=default;
 	virtual const Data& get_next()=0;
 	inline virtual int total()const=0;
-	virtual void split(int, int&) =0;
-	virtual void separate()=0;
+	virtual void separate() =0;
+	virtual void prepare(int, int, const std::string&)=0;
 protected:
 	Database(){};
 };

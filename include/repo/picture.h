@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
 #include "database.h"
@@ -12,7 +13,7 @@ class Pictures: public Database {
 	
 private:
 	ostream& ostr;
-	int count {0};
+	size_t count {0};
 	int cursor {-1};
 	int file_cursor {-1};
 	filesystem::path pictures;
@@ -31,7 +32,7 @@ private:
 			
 			if (filesystem::is_directory(f)) read_directory(f);
 			else {
-				if (formats.contains(f.extension().string())) files.push_back(f.string());
+				if (formats.contains(lower(f.extension().string()))) files.push_back(f.string());
 			}
 		}
 		database.push_back({ label, move(files) });
@@ -45,8 +46,10 @@ public:
 			error(ER_FILE, (string("Could not open image file ")+pictures.string()).c_str());
 		
 		if (filesystem::is_directory(pictures)) read_directory(pictures);
+		else error(ER_FILE, (string("Could not read directory ")+pictures.string()).c_str());
+
 		if (count>0) {cursor=0; file_cursor=0;}
-		LOGI(ostr, "Pictures: "<<count<<endl)
+		LOGI(ostr, "Pictures: "<<count<<" files\n")
 	}
 		
 	const Data& get_next() final {
@@ -61,7 +64,6 @@ public:
 		if (!pic.data) 
 			error(ER_FILE, (string("Could not open file ")+files.at(file_cursor-1)).c_str());
 
-		// TODO: Если необходимо нужно пщдогнать размеры картинки к размерам сети
 		data.label = label;
 		data.rows = pic.rows;
 		data.cols = pic.cols;
@@ -71,8 +73,35 @@ public:
 	}
 
 	inline int total()  const noexcept final {return count;} 
-	void split(int, int&) final {};
 	void separate() final {};
+	void prepare(int w, int h, const string& where) final {
+
+		if (not create_dir(where)) 
+			error(ER_FILE, (string("Could not create directory, ")+where).c_str());
+
+		LOG(ostr, "Prepare to "<<w<<'x'<<h<<'\n')
+		for (auto& [label, files]: database) {
+			
+			string dir=where+label+'/';
+			if (not create_dir(dir)) 
+				error(ER_FILE, (string("Could not create directory, ")+dir).c_str());
+
+			for (auto& file: files) {
+				
+				//LOG(ostr, "proccess: "<<file<<'\n')
+				cv::Mat pic= cv::imread(file, cv::IMREAD_UNCHANGED); // with alpha channel
+
+				cv::Mat alpha;
+				cv::extractChannel(pic, alpha, 3);
+											
+				cv::Mat scaled;
+				cv::resize(alpha, scaled, {w,h}, 0.0, 0.0, cv::INTER_AREA);
+
+				filesystem::path f{file};
+				cv::imwrite(dir+f.filename().string(), scaled);
+			}
+		}
+	}
 	
 	~Pictures(){}
 };

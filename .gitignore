@@ -2,6 +2,7 @@
 /db
 /.vscode
 *.exe
+*.pdb
 *.yml
 /test/build
 /test/*.exe

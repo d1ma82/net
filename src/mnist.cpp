@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 #include "repo/mnist.h"
+#include "globals.h"
 
 static int reverse_int (int i) {
     unsigned char c1, c2, c3, c4;
@@ -13,17 +14,6 @@ static int reverse_int (int i) {
     c4 = (i >> 24) & 255;
 
     return ((int)c1 << 24) + ((int)c2 << 16) + ((int)c3 << 8) + c4;
-}
-
-bool Mnist::create_dir(const string& dir) {
-			
-	if (not filesystem::exists(dir)) {
-		if (not filesystem::create_directory(dir)) {
-			LOGE("Could not create directory, "<<dir<<'\n')
-			return false;
-		}
-	}
-	return true;
 }
 
 Mnist::Mnist (ostream& ostr, const char* images, const char* labels) {
@@ -73,65 +63,6 @@ Mnist::Mnist (ostream& ostr, const char* image_file_name) {
 	data.image.resize(rows*cols);
 	data.label = img_file.stem().string()[0];
 	LOGI(ostr, "IDX3: "<<num_images<<" recs, "<<rows<<'x'<<cols<<", label: "<<data.label<<'\n')
-}
-
-void Mnist::split (int blocks, int& counter) {
-			
-	if (counter>blocks) return;
-	stringstream path_image, path_label, path_conf;
-	
-	path_conf <<  "./mnist/par/";
-	path_image << "./mnist/par/";
-	path_label << "./mnist/par/";
-	if (not create_dir(path_label.str())) return;
-	
-	path_image << counter;
-	path_label << counter;
-	if (not create_dir(path_label.str())) return;
-	 
-	path_image << '/' << "images.idx3-ubyte";
-	path_label << '/' << "labels.idx1-ubyte";
-	
-	if (not conf.is_open()) {
-
-		conf.open(path_conf.str()+"conf.txt");
-		conf << "count " << blocks << '\n';
-	}
-	conf << "path " << path_conf.str() << counter << '/' << '\n';
-	split_image.open (path_image.str(), ios_base::binary);
-	if (!split_image) {
-		LOGE("Could not create file, "<<path_image.str()<<'\n')
-		return;
-	}
-	
-	split_label.open(path_label.str(), ios_base::binary);
-	if (!split_label) {
-		LOGE("Could not create file, "<<path_label.str()<<'\n')
-		return;
-	}
-
-	//write_header(split_image, &split_label);
-	uint32_t tmp = reverse_int(img_magic), block = reverse_int(num_images/blocks);
-	split_image.write((char*) &tmp, sizeof(uint32_t));
-	tmp = reverse_int(lab_magic);
-	split_label.write((char*) &tmp, sizeof(uint32_t));
-	split_image.write((char*) &block, sizeof(uint32_t));
-	split_label.write((char*) &block, sizeof(uint32_t));
-	tmp = reverse_int(rows);
-	split_image.write((char*) &tmp, sizeof(uint32_t));
-	tmp = reverse_int(cols);
-	split_image.write((char*) &tmp, sizeof(uint32_t));
-	
-	for (int i=0; i<num_images/blocks; i++) {
-		
-		get_next();
-		split_image.write((char*) &data.image[0], data.image.size());
-		split_label.write((char*) &data.label, 1);
-	}
-	if (split_image.is_open()) split_image.close();
-	if (split_label.is_open()) split_label.close();
-	
-	split(blocks, ++counter);
 }
 
 		// digits D:\git\cpp\net\mnist\train

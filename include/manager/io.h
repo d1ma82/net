@@ -12,7 +12,7 @@ public:
 	IO(filesystem::path p) {
 
 		if (p.extension().string()==".yml") {
-			saver = new YMLsaver<Matrix>(p.string().c_str());
+			saver = new YMLsaver<Matrix>(p.string());
 		} 
 		else
 			LOGI(cout, "Unknown format "<<p.extension().string()<<'\n') 

@@ -1,10 +1,8 @@
 #pragma once
 
-#include <iterator>
 #include <random>
 #include <memory>
 #include <functional>
-#include "globals.h"
 
 constexpr double Ze = 0.001;
 constexpr double delta = 0.00000001;

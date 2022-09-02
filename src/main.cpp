@@ -3,6 +3,7 @@
 #include <cstring>
 #include <thread>
 
+#include "globals.h"
 #include "manager/interpreter.h"
 #include "test/test.h"
 
@@ -57,66 +58,65 @@ template<class NeuroNetTrainer>
 }
 
 void run_tests() {
-
+	cout<<boolalpha;
 	test_matrices();
+	test_globals();
 }
 
 const char* help_str = {
 	"net <-p> -fc <-f file> <-fs file1 file 2 ...> # launch full connected net, and use configuration located in file\n"
 	"-fc 	full connected net\n"
 	"-p 	run parallel\n"
-	"-f 	config file or files when parallel\n"
+	"-f 	config file or files for parallel execution\n"
 	"-h 	print this\n"
 };
 
 inline void help(const char* why){cout<<why<<'\n'<<help_str<<endl;}
 
-
+		// net -f D:\git\cpp\net\db\_Cyrillic\conf.txt
 		// net -fc -f D:\git\cpp\net\db\idx3\conf1.txt
 		// net -p -fc -f D:\git\cpp\net\db\idx3\conf1.txt
 		// net -p -fc -f D:\git\cpp\net\db\idx3\conf1.txt D:\git\cpp\net\db\idx3\conf2.txt
 		// net -fc -f D:\git\cpp\net\db\picture\conf.txt
-
 int main(int argc, char* argv[]) {		
 	
 	int result=0;
-	if (argc==1)run_command_mode<fc_matrix>();
+	switch (argc) {
+		case 1: run_command_mode<fc_matrix>(); break;
+		case 2: 
+			if (strcmp(argv[1], "-h")==0) help("");
+			else if (strcmp(argv[1], "-fc")==0) run_command_mode<fc_matrix>();
+#ifdef TEST
+			else if (strcmp(argv[1], "-test")==0) run_tests();
+#endif
+			break;
+		case 3:
+			if (strcmp(argv[1], "-f")==0) result = run_file_mode<fc_matrix>(argv[2], cout);	
+			else help(argv[1]);
+			break;
+		case 4:
+			if (strcmp(argv[1], "-fc")==0) 
+				if (strcmp(argv[2], "-f")==0) result = run_file_mode<fc_matrix>(argv[3], cout);	
+				else help(argv[2]);
+			else help(argv[1]);
+			break;
+		case 5: case 6:
+			if (strcmp(argv[1], "-p")==0) {
+				if (strcmp(argv[2], "-fc")==0) {
 
-	else if (argc==2) {
+					if (strcmp(argv[3], "-f")==0) {
 
-		if (strcmp(argv[1], "-h")==0) help("");
-		else if (strcmp(argv[1], "-fc")==0) run_command_mode<fc_matrix>();
-		else if (strcmp(argv[1], "-test")==0) run_tests();
-		else help(argv[1]);
-	} 
-	else if (argc==4) {
+						vector<int> results;
+						vector<ostringstream> outputs;
+						run_parallel_file_mode<fc_matrix>(argc, 4, argv, results, outputs);
 
-		if (strcmp(argv[1], "-fc")==0) 
-			if (strcmp(argv[2], "-f")==0) 
-				result = run_file_mode<fc_matrix>(argv[3], cout);	
-			else help(argv[2]);
-		else help(argv[1]);		
-	} 
-	else if (argc==5 || argc==6) {
-
-		if (strcmp(argv[1], "-p")==0) {
-			if (strcmp(argv[2], "-fc")==0) {
-
-				if (strcmp(argv[3], "-f")==0) {
-
-					vector<int> results;
-					vector<ostringstream> outputs;
-					run_parallel_file_mode<fc_matrix>(argc, 4, argv, results, outputs);
-
-					for (int i=0; auto& str: outputs) 
-						cout<<str.str()<<'\n'<<"result: "<<results[i++]<<'\n';
-				}
-				else help(argv[3]);	
-			}
-			else help(argv[2]);
-		}
-		else help(argv[1]);
+						for (int i=0; auto& str: outputs) 
+							cout<<str.str()<<'\n'<<"result: "<<results[i++]<<'\n';
+							
+					} else help(argv[3]);	
+				} else help(argv[2]);
+			} else help(argv[1]);
+		default: help("Wrong number of arguments\n");
 	}
-	else help("wrong number of argc");
 	LOGI(cout, "program end: "<<result<<endl)
 }

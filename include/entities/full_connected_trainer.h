@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vector>
 #include "manager/repo.h"
 #include "entities/full_connected_net.h"
 
@@ -33,7 +32,6 @@ template<class Matrix> class FullConnectedTrainer {
 private:
 	Net<Matrix>* net;
 	ostream& ostr;
-	repo::config repo_config;
 	statistic stat;
 	int records_queried{0};
 	vector<char> score;								// очки, 1- правильно 0-неправильно
@@ -50,9 +48,9 @@ public:
 		net = new Net<Matrix>(input_nodes, hidden_nodes, final_nodes, lr, ostr);
     }
 
-    void train(int records, int epochs, function<void (int, int)> progress) {
+    void train(int records, int epochs, const config& conf, function<void (int, int)> progress) {
 
-		repo::Repo repo(ostr, repo_config);
+		repo::Repo repo(ostr, conf);
 		
 		if (records <= 0 or records > repo->total()) records = repo->total();
 		LOG(ostr, "Begin train "<<records<<" recs\n")
@@ -75,9 +73,9 @@ public:
 		LOG(ostr, "End train\n")
     }
 
-    void query(int records) {
+    void query(int records, const config& conf) {
 
-        repo::Repo repo(ostr, repo_config);
+        repo::Repo repo(ostr, conf);
 	
 		if (records <= 0 or records > repo->total()) records = repo->total();
 
@@ -98,14 +96,6 @@ public:
 		}
 		records_queried=records;
     }
-
-	void repo_config_append(const string& config_line) {
-		
-		istringstream istr{config_line};
-		string key, value;
-		istr>>key; istr>>value;
-		repo_config[key] = value;
-	}
 
     inline const Net<Matrix>& get() const noexcept {return *net;} 
     void set(Net<Matrix>& net) noexcept {this->net=&net;}

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+#include <filesystem>
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -7,9 +9,11 @@
 
 enum {ER_RANGE=-6, ER_SYNTAX, ER_COMMAND, ER_FILE, ER_NULLPTR, ERROR, OK, EoF};
 
+typedef std::map<std::string, std::string> config;
+
 template<typename M> concept MatrixConcept=requires(M m) {
 	typename M::value_type; 
-	//typename M::iterator;
+	typename M::iterator;
 	//{begin(m)}-> void*;
 	//{end}
 };
@@ -37,6 +41,16 @@ inline std::string lower(const std::string str) {
 	result.resize(str.length());
 	for (int i=0; auto ch: str) result[i++]=tolower(ch);
 	return result;
+}
+
+inline bool create_dir(const std::string& dir) {
+			
+	if (not std::filesystem::exists(dir)) {
+		if (not std::filesystem::create_directory(dir)) {
+			return false;
+		}
+	}
+	return true;
 }
 
 inline void validate_path(std::string& path) {
