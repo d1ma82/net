@@ -34,7 +34,7 @@ public:
 	Mnist (std::ostream&, const char*, const char*);
 	Mnist (std::ostream&, const char*);
 
-	int total() const noexcept {return num_images;}
+	inline size_t total() const noexcept {return num_images;}
 		
 	const Data& get_next() final {
 
@@ -42,11 +42,9 @@ public:
 		image_file.read((char*) &data.image[0], rows * cols);
 		return data;
 	}
-	
-	void separate () final;
-		// digits D:\git\cpp\net\mnist\train
-	void prepare(int, int, const string&) final {};
-		
+
+	friend void separate (Mnist& mnist);
+
    ~Mnist() {
 	   if (conf.is_open()) conf.close();
 	   if (image_file.is_open()) image_file.close();

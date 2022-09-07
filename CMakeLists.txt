@@ -21,13 +21,14 @@ project (Net)
 
 add_definitions(-DLOGGING)
 add_definitions(-DTEST)
+add_definitions(-DWRITEIMG)
 #add_definitions(-std=c++17)
 add_definitions(-std=c++2a)
 
 file(GLOB SRC "./src/*.cpp")
 add_executable (${PROJECT_NAME} ${SRC})
 
-find_package(OpenCV REQUIRED core imgcodecs)
+find_package(OpenCV REQUIRED core imgcodecs highgui)
 message(STATUS "OpenCV version: ${OpenCV_VERSION}")
 message(STATUS "OpenCV libs: ${OpenCV_LIBS}")
 message(STATUS "OpenCV include: ${OpenCV_INCLUDE_DIRS}")

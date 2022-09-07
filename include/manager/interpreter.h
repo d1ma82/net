@@ -19,7 +19,6 @@ const char* PRINT=		"print";
 const char* SAVE=        "save";
 const char* LOAD=		"load";
 const char  REM=		'#';
-const char* PREP=		"prepare";
 
 static const map<const char*, const char*> helper{
 	make_pair(CREATE, "use: create int input int hidden int final float rate"),
@@ -29,13 +28,14 @@ static const map<const char*, const char*> helper{
 };
 
 template<typename T> T get(const char* command, ostream& ostr, istringstream& istr) {
-		
+
+	if (istr.eof()) {
+		LOG(ostr, "Warning, try get value, when EOF at "<<command<<'\n')
+	}
+
 	T t; istr>>t;
 	
-	if (istr.eof()) {
-		LOG(ostr, command<< " EOF\n")
-	}
-	else if (istr.fail()) {
+	if (istr.fail() and not istr.eof()) {
 		istr.clear();
 		error(ER_SYNTAX, helper.at(command));
 	}
@@ -75,6 +75,7 @@ private:
 			string value = get<string>(REPO, output, istr);
 			conf[type] = value;			
 		} while (not istr.eof());
+		LOGI(output, "OK\n")
 	}
 
 	void command_train(istringstream& istr) {
@@ -119,14 +120,6 @@ private:
 		trainer->set(net);
 		LOGI(output, net<<' '<<"loaded."<<'\n')
 	}
-	void command_prepare(istringstream& istr) {
-
-		int w= get<int>(PREP, output, istr);
-		int h= get<int>(PREP, output, istr);
-		string where= get<string>(PREP, output, istr);
-		repo::Repo repo(output, conf);
-		repo->prepare(w, h, where.c_str());
-	}
 	
 public:
 	Interpreter(istream& input, ostream& output):input{input}, output{output} {};
@@ -149,7 +142,6 @@ public:
 				else if (command == QUERY) command_query(istr);
 				else if (command == SAVE) command_save(istr);
 				else if (command == LOAD) command_load(istr);
-				else if (command == PREP) command_prepare(istr);
 				else error(ER_COMMAND, "Unknown command.\n");
 			}
 			catch(runtime_error& ex) {LOGI(output, ex.what()) continue;}

@@ -66,7 +66,7 @@ Mnist::Mnist (ostream& ostr, const char* image_file_name) {
 }
 
 		// digits D:\git\cpp\net\mnist\train
-void Mnist::separate() {
+void separate(Mnist& mnist) {
 
 	LOGI(cout, "Split to digits\n")
 	constexpr uint32_t num_recs_pos = 2*sizeof(uint32_t);
@@ -84,16 +84,16 @@ void Mnist::separate() {
 		digits[i].open(path.str(), ios_base::binary);
 		if (digits[i].is_open()){
 			
-			digits[i].write((char*) &rows, sizeof(uint32_t));
-			digits[i].write((char*) &cols, sizeof(uint32_t));
+			digits[i].write((char*) &mnist.rows, sizeof(uint32_t));
+			digits[i].write((char*) &mnist.cols, sizeof(uint32_t));
 			digits[i].write((char*) &num_recs_pos, sizeof(uint32_t));
 		}
 	}
-	for (int i=0; i<num_images; i++) {
+	for (int i=0; i<mnist.num_images; i++) {
 		
-		get_next();
-		total[(int) data.label]++;
-		digits[(int) data.label].write((char*) &data.image[0], data.image.size());
+		mnist.get_next();
+		total[(int) mnist.data.label]++;
+		digits[(int) mnist.data.label].write((char*) &mnist.data.image[0], mnist.data.image.size());
 	}
 
 	exit:

@@ -35,32 +35,38 @@ template<class NeuroNetTrainer> int run_file_mode(const char* filename, ostream&
 }
 
 template<class NeuroNetTrainer> 
-	void run_parallel_file_mode(int argc, int idx, char* filenames[], vector<int>& results, vector<ostringstream>& outputs) {
+	void run_parallel_file_mode(
+		int argc, 
+		int idx, 
+		char* filenames[], 
+		vector<int>& results, 
+		vector<ostringstream>& outputs)
+	{
+		LOG(cout, "run_parallel_file_mode\n")
+		vector<thread> threads;
+		results.resize(0);
+		outputs.resize(0);
 
-	LOG(cout, "run_parallel_file_mode\n")
-	vector<thread> threads;
-	results.resize(0);
-	outputs.resize(0);
+		int i=0;
+		while (idx<argc) {
 
-	int i=0;
-	while (idx<argc) {
-
-		LOG(cout, "Loop: "<<argc<<','<<idx<<' ')
-		outputs.push_back({});
-		results.push_back(0);
-		thread thrd {[&]() {results[i]=run_file_mode<NeuroNetTrainer>(filenames[idx], outputs[i]); }};
-		threads.push_back(move(thrd));
-		threads[i].join();
-		LOG(cout, filenames[idx]<<endl)
-		i++; idx++;
-	}
-	LOG(cout, "Exit\n")
+			LOG(cout, "Loop: "<<argc<<','<<idx<<' ')
+			outputs.push_back({});
+			results.push_back(0);
+			thread thrd {[&]() {results[i]=run_file_mode<NeuroNetTrainer>(filenames[idx], outputs[i]); }};
+			threads.push_back(move(thrd));
+			threads[i].join();
+			LOG(cout, filenames[idx]<<endl)
+			i++; idx++;
+		}
+		LOG(cout, "Exit\n")
 }
 
 void run_tests() {
 	cout<<boolalpha;
-	test_matrices();
-	test_globals();
+	test::photo();
+	//test::matrices();
+	//test::globals();
 }
 
 const char* help_str = {
@@ -88,6 +94,8 @@ int main(int argc, char* argv[]) {
 			else if (strcmp(argv[1], "-fc")==0) run_command_mode<fc_matrix>();
 #ifdef TEST
 			else if (strcmp(argv[1], "-test")==0) run_tests();
+#else
+			cout<<"Tests not compliled\n";
 #endif
 			break;
 		case 3:

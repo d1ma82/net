@@ -2,12 +2,14 @@
 
 #include "repo/mnist.h"
 #include "repo/picture.h"
+#include "repo/photo.h"
 
 namespace repo{
 	
 const char* MNIST 	= "mnist";
 const char* IDX3 	= "idx3";
 const char* PICS	= "picture";
+const char* PHOTO 	= "photo";
 const char* TYPE	= "type";
 const char* IMAGES 	= "images";
 const char* LABELS 	= "labels";
@@ -34,6 +36,9 @@ public:
 		}
 		else if (conf.at(TYPE)==PICS) {
 			database = new Pictures(ostr, conf.at(IMAGES).c_str());
+		}
+		else if (conf.at(TYPE)==PHOTO) {
+			database = new Photo(ostr, conf.at(IMAGES).c_str());
 		} 		
 		else {
 			error(ERROR, "Unknown database type.\n");

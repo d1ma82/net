@@ -7,7 +7,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
-#include "database.h"
+#include "repo/database.h"
 
 class Pictures: public Database {
 	
@@ -72,15 +72,14 @@ public:
 		return data;
 	}
 
-	inline int total()  const noexcept final {return count;} 
-	void separate() final {};
-	void prepare(int w, int h, const string& where) final {
+	inline size_t total()  const noexcept final {return count;} 
+	friend void convert(const Pictures& pictures, int w, int h, const string& where) {
 
 		if (not create_dir(where)) 
 			error(ER_FILE, (string("Could not create directory, ")+where).c_str());
 
-		LOG(ostr, "Prepare to "<<w<<'x'<<h<<'\n')
-		for (auto& [label, files]: database) {
+		LOG(pictures.ostr, "Prepare to "<<w<<'x'<<h<<'\n')
+		for (auto& [label, files]: pictures.database) {
 			
 			string dir=where+label+'/';
 			if (not create_dir(dir)) 
