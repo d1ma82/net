@@ -124,7 +124,7 @@ public:
 
 Photo(ostream& ostr, const char* filename): ostr{ostr} {
 
-    int interest_line=2;
+    int interest_line=3;
     cv::Mat input = cv::imread(filename);
     cv::Mat no_shadows = remove_shadows(input);
     cv::Mat binary = binarize(no_shadows);
@@ -134,10 +134,9 @@ Photo(ostream& ostr, const char* filename): ostr{ostr} {
     auto regions = text_areas(binary);
     Page page=make_page(regions);
 
-    for (int l=-1; auto& line: page) {
+    for (int l=0; auto& line: page) {
         
-        l++;
-        if (l!=interest_line) continue;
+        if (l++ != interest_line) continue;
         if (line.empty()) continue;
         sort(line.begin(), line.end(), 
             [&] (const cv::RotatedRect& r1, const cv::RotatedRect& r2) {
@@ -149,9 +148,11 @@ Photo(ostream& ostr, const char* filename): ostr{ostr} {
         for (int i=0; const auto& region: line) {
 
             auto cropped=deskewAndcrop(input, region);
+#ifdef WRITEIMG
             stringstream filename;
             filename<<"./debug/regions/region"<<i++<<".jpg";
             cv::imwrite(filename.str(), cropped);
+#endif
             points(region, p1);
             cout<<i-1<< ", TL: "<<p1[TL].x<<'x'<<p1[TL].y<<
                         " TR: "<<p1[TR].x<<'x'<<p1[TR].y<<
@@ -162,7 +163,6 @@ Photo(ostream& ostr, const char* filename): ostr{ostr} {
             for (int j=0; j<4; j++) 
                 cv::line(input, p1[j], p1[(j+1)%4], {0,255,0}, 2);
         }
-        if (l==3) break;
     }
 #ifdef WRITEIMG
     cv::imwrite("./debug/rects.jpg", input);
