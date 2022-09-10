@@ -13,6 +13,7 @@ class Pictures: public Database {
 	
 private:
 	ostream& ostr;
+	cv::Mat mat;
 	size_t count {0};
 	int cursor {-1};
 	int file_cursor {-1};
@@ -51,7 +52,7 @@ public:
 		if (count>0) {cursor=0; file_cursor=0;}
 		LOGI(ostr, "Pictures: "<<count<<" files\n")
 	}
-		
+	cv::Mat get_next(const cv::RotatedRect&) final {error(ERROR, "Not implemented");return mat;}	
 	const Data& get_next() final {
 
 		if (cursor<0 or cursor>=database.size()) error(EoF, "End of file\n");

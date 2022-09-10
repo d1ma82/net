@@ -17,9 +17,6 @@ static cv::Scalar randomColor(cv::RNG& rng) {
 cv::Mat binarize(cv::Mat input) {
         
     cv::cvtColor(input, input, cv::COLOR_BGR2GRAY);
-#ifdef WRITEIMG
-    cv::imwrite("./debug/gray.jpg", input);
-#endif
     cv::Mat binary;
     cv::threshold(input, binary, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 
@@ -33,10 +30,8 @@ std::vector<cv::RotatedRect> text_areas(cv::Mat input) {
         // Dilate
     auto kernel = cv::getStructuringElement(cv::MORPH_CROSS, {3,3});
     cv::Mat dilated;
-    cv::dilate(input, dilated, kernel, {-1, -1}, 7);
-#ifdef WRITEIMG
-    cv::imwrite("./debug/dilated.jpg", dilated);
-#endif
+    cv::dilate(input, dilated, kernel, {-1, -1}, 10);
+
     // Contours
     Contours contours;
     cv::findContours(dilated, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
@@ -73,7 +68,7 @@ cv::Mat deskewAndcrop(cv::Mat input, const cv::RotatedRect& region) {
 
     cv::Mat cropped;
     cv::getRectSubPix(rotated, size, region.center, cropped);
-    cv::copyMakeBorder(cropped, cropped, 5, 5, 5, 5, cv::BORDER_CONSTANT, cv::Scalar(0));
+    //cv::copyMakeBorder(cropped, cropped, 5, 5, 5, 5, cv::BORDER_CONSTANT, cv::Scalar(0));
     return cropped;
 }
 
@@ -96,8 +91,6 @@ cv::Mat remove_shadows(cv::Mat input) {
     }
     cv::Mat result;
     cv::merge(result_planes, result);
-#ifdef WRITEIMG
-    cv::imwrite("./debug/no_shadows.jpg", result);
-#endif
+
     return result;
 }

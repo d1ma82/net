@@ -64,7 +64,8 @@ template<class NeuroNetTrainer>
 
 void run_tests() {
 	cout<<boolalpha;
-	test::photo();
+	cout<<"Test word: \n"<<test::read()<<'\n';
+	//test::photo();
 	//test::matrices();
 	//test::globals();
 }

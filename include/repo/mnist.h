@@ -23,6 +23,7 @@ private:
 		ofstream split_image;
 		ofstream split_label;
 		
+		cv::Mat mat;
 		Data data;
 		bool detect_files(const string& config);
 public:
@@ -35,7 +36,7 @@ public:
 	Mnist (std::ostream&, const char*);
 
 	inline size_t total() const noexcept {return num_images;}
-		
+	cv::Mat get_next(const cv::RotatedRect&) final {error(ERROR, "Not implemented");return mat;}	
 	const Data& get_next() final {
 
 		if (label_file.is_open()) label_file.read((char*)&data.label, 1);

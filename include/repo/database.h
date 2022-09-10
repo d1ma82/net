@@ -1,4 +1,6 @@
 #pragma once
+
+#include <opencv2/core.hpp>
 #include <vector>
 #include "globals.h"
 struct Data {	
@@ -31,6 +33,7 @@ class Database {
 public:
 	virtual ~Database()=default;
 	virtual const Data& get_next()=0;
+	virtual cv::Mat get_next(const cv::RotatedRect&)=0;
 	inline virtual size_t total()const=0;
 protected:
 	Database(){};

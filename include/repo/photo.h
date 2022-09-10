@@ -8,26 +8,32 @@
 
 class Photo: public Database {
 private:
+typedef std::vector<std::vector<cv::RotatedRect>> Page;
+using LineIterator=Page::iterator;
+using WordIterator=Page::value_type::iterator;
 
-typedef vector<vector<cv::RotatedRect>> Page;
+int num{0};
 enum {BL, TL, TR, BR};
 const double INTER_LINE = 40.0;
 size_t count {0};
 Data data;
-ostream& ostr;
+std::ostream& ostr;
+cv::Mat input_image;    // Изображение по которому строится страница
 cv::Point2f p1[4];  
 cv::Point2f p2[4];
+Page page;
+LineIterator line_iterator;  // итератор по странице
     
 void points(const cv::RotatedRect& r1, cv::Point2f* pts) {
 
     r1.points(pts);
     if (r1.angle>=45.0) {
-        swap(pts[TL].x, pts[BR].x);
-        swap(pts[TR].y, pts[BL].y);
+        std::swap(pts[TL].x, pts[BR].x);
+        std::swap(pts[TR].y, pts[BL].y);
     }
 }
 
-Page make_page(const vector<cv::RotatedRect>& input) {
+Page make_page(const std::vector<cv::RotatedRect>& input) {
     
     Page page;
     if (input.empty()) return page;
@@ -111,70 +117,82 @@ void shrink_page(Page& page, double avg_line_height) {
 
                 LOG(ostr, "Line "<<j<<" same as line "<<i<<'\n')
                 for (auto& word: page[j]) 
-                    page[i].push_back(move(word));
+                    page[i].push_back(std::move(word));
                 
                 page[j].resize(0);
             }
             break;
         }
+        count+=page[i].size();
     } 
+}
+
+LineIterator next_line() {
+
+    while (line_iterator!=page.end() and line_iterator->empty()) line_iterator++;
+    sort(line_iterator->begin(), line_iterator->end(), 
+        [&] (const cv::RotatedRect& r1, const cv::RotatedRect& r2) {
+
+            points(r1, p1); points(r2, p2);
+            return p1[BL].x < p2[BL].x;
+    });
+    return line_iterator;
 }
 
 public:
 
-Photo(ostream& ostr, const char* filename): ostr{ostr} {
+Photo(std::ostream& ostr, const char* filename): ostr{ostr} {
 
-    int interest_line=3;
-    cv::Mat input = cv::imread(filename);
-    cv::Mat no_shadows = remove_shadows(input);
-    cv::Mat binary = binarize(no_shadows);
-#ifdef WRITEIMG
-    cv::imwrite("./debug/binary.jpg", binary);
-#endif
-    auto regions = text_areas(binary);
-    Page page=make_page(regions);
-
-    for (int l=0; auto& line: page) {
-        
-        if (l++ != interest_line) continue;
-        if (line.empty()) continue;
-        sort(line.begin(), line.end(), 
-            [&] (const cv::RotatedRect& r1, const cv::RotatedRect& r2) {
-
-                points(r1, p1); points(r2, p2);
-                return p1[BL].x < p2[BL].x;
-        });
-        LOG(ostr, "Read line: "<<l<<'\n')
-        for (int i=0; const auto& region: line) {
-
-            auto cropped=deskewAndcrop(input, region);
-#ifdef WRITEIMG
-            stringstream filename;
-            filename<<"./debug/regions/region"<<i++<<".jpg";
-            cv::imwrite(filename.str(), cropped);
-#endif
-            points(region, p1);
-            cout<<i-1<< ", TL: "<<p1[TL].x<<'x'<<p1[TL].y<<
-                        " TR: "<<p1[TR].x<<'x'<<p1[TR].y<<
-                        ", WxH: "<<(region.angle>45.0? region.size.height:region.size.width)<<'x'
-                                 <<(region.angle>45.0? region.size.width:region.size.height)<<
-                        ", a: "<<region.angle<<'\n';
-            
-            for (int j=0; j<4; j++) 
-                cv::line(input, p1[j], p1[(j+1)%4], {0,255,0}, 2);
-        }
+    ostr<<boolalpha;
+    input_image = cv::imread(filename);
+    if (!input_image.data) {
+        error(ER_FILE, string(("Could not open file ")+string(filename)).c_str());
     }
-#ifdef WRITEIMG
-    cv::imwrite("./debug/rects.jpg", input);
-#endif
-}
-    
-const Data& get_next() final {
+    cv::Mat no_shadows = remove_shadows(input_image);
+    cv::Mat binary = binarize(no_shadows);
+    auto regions = text_areas(binary);
+    page=make_page(regions);
+    line_iterator=page.begin();
+    if (page.size()<=0) error(ERROR, "Could not read page\n");
 
+    LOGI(ostr, "Photo: "<<count<<" words\n")   
+}
+// Read line only
+friend void select (Photo& photo, int line_index) {
+
+    if (line_index<0 or line_index>=photo.page.size()) error(ER_RANGE, "invalid page index\n");
+
+    while (line_index>0) {line_index--; photo.line_iterator++;}
+}
+
+const Data& get_next() final { 
+    
+    error(ERROR, "Not implemented const Data& Photo::get_next().");
     return data;
 }
 
+cv::Mat get_next(const cv::RotatedRect& rect) final {
+    
+    cv::Mat word=deskewAndcrop(input_image, rect);
+    points(rect, p1);
+    LOG(ostr, num-1<< 
+        ", TL: "<<p1[TL].x<<'x'<<p1[TL].y<<
+        " TR: "<<p1[TR].x<<'x'<<p1[TR].y<<
+        ", WxH: "<<(rect.angle>45.0? rect.size.height:rect.size.width)<<'x'
+                <<(rect.angle>45.0? rect.size.width:rect.size.height)<<
+        ", a: "<<rect.angle<<'\n');
+
+#ifdef WRITEIMG
+    for (int j=0; j<4; j++) 
+        cv::line(input_image, p1[j], p1[(j+1)%4], {0,255,0}, 2);
+    cv::imwrite("./debug/word.jpg", input_image);
+#endif 
+    return word;
+}
+
 inline size_t total() const final {return count;} 
-//TODO: Функции OpenCV перенести в отдельый файл утилит
-//      Удалить тени
+
+WordIterator begin() const {return line_iterator->begin();}
+WordIterator end() const {return line_iterator->end();}
+
 };
