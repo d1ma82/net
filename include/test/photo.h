@@ -8,9 +8,9 @@ bool photo() {
 
 
     Photo photo(cout, "D:/git/cpp/net/db/DCIM/IMG_20220603_142405.jpg");
-    const Data& data= photo.get_next();
-    std::cout<<data.rows<<'x'<<data.cols<<'\n';
+    const Data data= photo.get_next();
+    std::cout<<data.image;
     //data.print(std::cout);
-    return data.rows>0 and data.cols>0;
+    return data.image.data!=nullptr;
 }
 }

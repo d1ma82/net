@@ -59,8 +59,8 @@ public:
 		while (epochs-- > 0) {
 			for (int n=0; n<records; n++) {
 					
-				const Data& next = repo->get_next();
-				net->train(&next.image[0], next.label);
+				const Data next = repo->get_next();
+				net->train(next.image.data, next.label);
 				stat.read++;
 				if (progress) progress(records*ep, ++k);
 			}
@@ -83,8 +83,8 @@ public:
 	
 		for (int n=0; n<records; n++) {
 		
-			const Data& next = repo->get_next();
-			auto result = net->query(&next.image[0])->maxI();
+			const Data next = repo->get_next();
+			auto result = net->query(next.image.data)->maxI();
 			digits[(int)next.label]++; 
 
 			if ((int) next.label == result) {
@@ -96,6 +96,10 @@ public:
 		}
 		records_queried=records;
     }
+
+	void query(const config& conf) {
+
+	}
 
     inline const Net<Matrix>& get() const noexcept {return *net;} 
     void set(Net<Matrix>& net) noexcept {this->net=&net;}

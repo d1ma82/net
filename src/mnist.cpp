@@ -43,9 +43,8 @@ Mnist::Mnist (ostream& ostr, const char* images, const char* labels) {
 	image_file.read((char*) &cols, sizeof(cols));
 	cols = reverse_int(cols);
 	rows = reverse_int(rows);
-	data.rows = rows;
-	data.cols = cols;
-	data.image.resize(rows*cols);
+	data.image = cv::Mat(rows, cols, CV_8UC1);
+	data.image.reserveBuffer(rows*cols);
 	LOGI(ostr, "Mnist: "<<num_images<<" recs, "<<rows<<'x'<<cols<<'\n')
 }
 
@@ -58,9 +57,8 @@ Mnist::Mnist (ostream& ostr, const char* image_file_name) {
 	image_file.read((char*) &rows, sizeof(rows));
 	image_file.read((char*) &cols, sizeof(cols));
 	image_file.read((char*) &num_images, sizeof(num_images));
-	data.rows = rows;
-	data.cols = cols;
-	data.image.resize(rows*cols);
+	data.image = cv::Mat(rows, cols, CV_8UC1);
+	data.image.reserveBuffer(rows*cols);
 	data.label = img_file.stem().string()[0];
 	LOGI(ostr, "IDX3: "<<num_images<<" recs, "<<rows<<'x'<<cols<<", label: "<<data.label<<'\n')
 }
@@ -93,7 +91,7 @@ void separate(Mnist& mnist) {
 		
 		mnist.get_next();
 		total[(int) mnist.data.label]++;
-		digits[(int) mnist.data.label].write((char*) &mnist.data.image[0], mnist.data.image.size());
+		//digits[(int) mnist.data.label].write((char*) mnist.data.image.data, mnist.data.image.size());
 	}
 
 	exit:

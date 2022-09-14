@@ -13,7 +13,7 @@ class Pictures: public Database {
 	
 private:
 	ostream& ostr;
-	cv::Mat mat;
+	std::vector<Data> dat;
 	size_t count {0};
 	int cursor {-1};
 	int file_cursor {-1};
@@ -52,24 +52,20 @@ public:
 		if (count>0) {cursor=0; file_cursor=0;}
 		LOGI(ostr, "Pictures: "<<count<<" files\n")
 	}
-	cv::Mat get_next(const cv::RotatedRect&) final {error(ERROR, "Not implemented");return mat;}	
-	const Data& get_next() final {
+	std::vector<Data> get_next(const cv::RotatedRect&) final {error(ERROR, "Not implemented");return dat;}	
+	
+	const Data get_next() final {
 
 		if (cursor<0 or cursor>=database.size()) error(EoF, "End of file\n");
 
 		const auto& [label, files] = database[cursor];
 
 		if (file_cursor>=files.size()) {file_cursor=0; cursor++;}
-
-		cv::Mat pic = cv::imread(files.at(file_cursor++), cv::IMREAD_GRAYSCALE);
-		if (!pic.data) 
+		data.label = label;
+		data.image = cv::imread(files.at(file_cursor++), cv::IMREAD_GRAYSCALE);
+		if (!data.image.data) 
 			error(ER_FILE, (string("Could not open file ")+files.at(file_cursor-1)).c_str());
 
-		data.label = label;
-		data.rows = pic.rows;
-		data.cols = pic.cols;
-		data.image.resize(pic.rows*pic.cols);
-		copy(&pic.data[0], &pic.data[pic.rows*pic.cols], begin(data.image));
 		return data;
 	}
 

@@ -71,7 +71,7 @@ void run_tests() {
 }
 
 const char* help_str = {
-	"net <-p> -fc <-f file> <-fs file1 file 2 ...> # launch full connected net, and use configuration located in file\n"
+	"net <-p> -fc <-f file ...> # launch full connected net, and use configuration located in file\n"
 	"-fc 	full connected net\n"
 	"-p 	run parallel\n"
 	"-f 	config file or files for parallel execution\n"
