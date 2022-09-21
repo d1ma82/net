@@ -24,6 +24,7 @@ template<typename T> struct Matrix {
 	inline T& operator[](int index) {return data[index];}
 	inline const T& operator[](int index) const {return data[index];} // for constant references
 
+	// return index of max element
 	int maxI() const {
 		
 		T* max_el = max_element(&data[0], &data[size()]);

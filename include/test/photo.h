@@ -7,7 +7,7 @@ namespace test {
 bool photo() {
 
 
-    Photo photo(cout, "D:/git/cpp/net/db/DCIM/IMG_20220603_142405.jpg");
+    Photo photo(cout, "D:/git/cpp/net/db/DCIM/IMG_20220603_142405.jpg", 28);
     const Data data= photo.get_next();
     std::cout<<data.image;
     //data.print(std::cout);

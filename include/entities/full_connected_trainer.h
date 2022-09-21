@@ -3,9 +3,7 @@
 #include "manager/repo.h"
 #include "entities/full_connected_net.h"
 
-constexpr int MAX_DIGITS=10;
-
-static void is_valid(int input_nodes, int hidden_nodes, int final_nodes, double lr) {
+static void is_valid(int input_nodes, int hidden_nodes, double lr) {
 	
 	if (input_nodes <= 0 or input_nodes > 1000) {
 		error(ER_RANGE,"Input nodes have been in range: 1:1000\n");
@@ -13,18 +11,13 @@ static void is_valid(int input_nodes, int hidden_nodes, int final_nodes, double 
 	if (hidden_nodes <=0 or hidden_nodes > 1000) {
 		error(ER_RANGE,"Hidden nodes have been in range: 1:1000\n");
 	}
-	if (final_nodes <= 0 or final_nodes > 1000) {
-		error(ER_RANGE,"Final nodes have been in range: 1:1000\n");
-	}
 	if (abs(lr)<delta) error (ER_RANGE, "Learning rate have been not equal zero.\n");
 }
 
 typedef struct tag{
-	int read{0};
+	int epochs {0};
 	int records {0};
 	int time {0};
-	int total_records {0};
-	int total_time {0};
 } statistic;
 
 
@@ -34,21 +27,39 @@ private:
 	ostream& ostr;
 	statistic stat;
 	int records_queried{0};
-	vector<char> score;								// очки, 1- правильно 0-неправильно
-	vector<int> digits {0,0,0,0,0,0,0,0,0,0};		// кол-во цифр
-	vector<int> guess {0,0,0,0,0,0,0,0,0,0};		// кол-во правильно угаданых цифр
-public:
+	vector<char> score;							// очки, 1- правильно 0-неправильно
+	map<Label, pair<int, int>> symbols;		// символы, всего, кол-во правильно угаданых
+	const map<string, Labels> supported {{"digit", digit}};
+	string type;
+
+	void do_after() {
+		
+		this->type=net->type;
+		global_scale_factor=sqrt(net->input_nodes());
+	}
+public:  
 	using value_type=Matrix;
 	
 	FullConnectedTrainer(ostream& ostr):ostr{ostr} {};
 
-    FullConnectedTrainer(ostream& ostr, int input_nodes, int hidden_nodes, int final_nodes, double lr): ostr{ostr} {
-        
-        is_valid(input_nodes, hidden_nodes, final_nodes, lr);
-		net = new Net<Matrix>(input_nodes, hidden_nodes, final_nodes, lr, ostr);
+    FullConnectedTrainer(ostream& ostr, int input_nodes, int hidden_nodes, const string type, double lr): 
+		ostr{ostr}, type{type}
+	{
+		int final_nodes=supported.contains(type)? supported.at(type).size():0; 
+		if (final_nodes==0) error(ER_RANGE, (type + " not supported.").c_str());
+        is_valid(input_nodes, hidden_nodes, lr);
+		net = new Net<Matrix>(input_nodes, hidden_nodes, final_nodes, lr, ostr, type);
+		do_after();
     }
 
-    void train(int records, int epochs, const config& conf, function<void (int, int)> progress) {
+	void set(Net<Matrix>& net) {
+		
+		is_valid(net.input_nodes(), net.hidden_nodes(), net.learning_rate);
+		this->net=&net; 
+		do_after();
+	}
+
+    void train(int records, int epochs, const config& conf, function<void (ostream&, int, int)> progress) {
 
 		repo::Repo repo(ostr, conf);
 		
@@ -60,41 +71,45 @@ public:
 			for (int n=0; n<records; n++) {
 					
 				const Data next = repo->get_next();
-				net->train(next.image.data, next.label);
-				stat.read++;
-				if (progress) progress(records*ep, ++k);
+				net->train(next.image.data, next.label, supported.at(type));
+				if (progress) progress(ostr, records*ep, ++k);
 			}
 		}
 		auto t2 = chrono::system_clock::now();
-		stat.records = records;
-		stat.total_records += stat.records;
+		stat.epochs=	ep;
+		stat.records= 	records;
 		stat.time = chrono::duration_cast<chrono::milliseconds>(t2-t1).count();
-		stat.total_time += stat.time;
-		LOG(ostr, "End train\n")
+		
+		LOG(ostr, setw(2)<<stat.epochs<<
+			setw(5)<<stat.records<<
+			setw(8)<<stat.time<<" ms\n");
     }
 
-    void query(int records, const config& conf) {
+    void query(int records, const config& conf, function<void (ostream&, int, int)> progress) {
 
         repo::Repo repo(ostr, conf);
 	
 		if (records <= 0 or records > repo->total()) records = repo->total();
-
+		LOG(ostr, "Begin query "<<records<<" recs\n")
 		score.resize(records);
-	
+		
 		for (int n=0; n<records; n++) {
 		
 			const Data next = repo->get_next();
-			auto result = net->query(next.image.data)->maxI();
-			digits[(int)next.label]++; 
-
-			if ((int) next.label == result) {
+			Label result=net->query(next.image.data, supported.at(type));			
+			symbols[next.label].first++;
+			
+			if (next.label == result) {
+				LOG(ostr, "Guess\n")
 				score.push_back(1);
-				guess[(int)next.label]++;  
+				symbols[next.label].second++;  
 			}else{
 				score.push_back(0);
 			}
+			if (progress) progress(ostr, records, n+1);
 		}
 		records_queried=records;
+		LOG(ostr, '\n'<<*this)
     }
 
 	void query(const config& conf) {
@@ -102,8 +117,7 @@ public:
 	}
 
     inline const Net<Matrix>& get() const noexcept {return *net;} 
-    void set(Net<Matrix>& net) noexcept {this->net=&net;}
-
+	
 	friend std::ostream& operator <<(std::ostream& os, FullConnectedTrainer<Matrix>& trainer) {
 		
 		int eff = trainer.records_queried==0 ? 0: 
@@ -111,19 +125,16 @@ public:
 										trainer.score.end(), 0) / 
 												(float) trainer.records_queried * 100;
 		
-		os<<setw(2)<<trainer.net->id<<
-			setw(8)<<trainer.stat.records<<
-			setw(8)<<trainer.stat.time<<" ms"<<
-			setw(8)<<trainer.stat.total_records<<
-			setw(8)<<trainer.stat.total_time<<" ms\n";
+		for (const auto [sym, count]: trainer.symbols) {
 
-		for (int i=0; i<MAX_DIGITS; i++) {
-			os<<setw(2)<<trainer.net->id<<':'<<
-			setw(5)<<i<<':'<<
-			setw(5)<<trainer.digits[i]<<':'<<
-			setw(5)<<trainer.guess[i]<<':'<<
-			setw(9)<<trainer.guess[i]/(float)trainer.digits[i]*100<<"%\n";
+			const auto [all, guess]=count;
+
+			os<<setw(2)<<unsigned(sym)<<':'<<
+			setw(5)<<all<<':'<<
+			setw(5)<<guess<<':'<<
+			setw(9)<<guess/float(all)*100<<"%\n";
 		}
+		
 		os<<"Efficiency: "<<eff<<"%\n";
 		return os;
 	}

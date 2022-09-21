@@ -8,23 +8,26 @@
 #include <opencv2/imgcodecs.hpp>
 
 #include "repo/database.h"
+#include "utils/opencv.h"
 
 class Pictures: public Database {
 	
 private:
 	ostream& ostr;
 	std::vector<Data> dat;
+	int scale_to {0};
 	size_t count {0};
 	int cursor {-1};
 	int file_cursor {-1};
 	filesystem::path pictures;
 	Data data;
 	const set<std::string> formats {".png", ".jpg", ".bmp"};
-	vector<pair<char, vector<std::string>>> database;
+	vector<pair<Label, vector<std::string>>> database;
 
 	void read_directory(const filesystem::path& pics) {
 
 		char label = pics.stem().string()[0];
+		//LOG(ostr, "Label: "<<label<<'\n')
 		vector<string> files;
 
 		for (const filesystem::directory_entry& de: filesystem::directory_iterator(pics)) {
@@ -41,8 +44,12 @@ private:
 	} 
 	
 public:
-	Pictures(ostream& ostr, const char*  pics): ostr{ostr}, pictures{pics} {
+	Pictures(ostream& ostr, const char*  pics, int scale_to): 
+				ostr{ostr}, scale_to{scale_to} {
 		
+		string p{pics};
+		if (p[p.length()-1]=='\\' or p[p.length()-1]=='/') p[p.length()-1]='\0';
+		pictures=p;
 		if (not filesystem::exists(pictures))
 			error(ER_FILE, (string("Could not open image file ")+pictures.string()).c_str());
 		
@@ -62,15 +69,16 @@ public:
 
 		if (file_cursor>=files.size()) {file_cursor=0; cursor++;}
 		data.label = label;
-		data.image = cv::imread(files.at(file_cursor++), cv::IMREAD_GRAYSCALE);
-		if (!data.image.data) 
-			error(ER_FILE, (string("Could not open file ")+files.at(file_cursor-1)).c_str());
-
+		cv::Mat input = cv::imread(files.at(file_cursor++));
+		if (!input.data) error(ER_FILE, (string("Could not open file ")+files.at(file_cursor-1)).c_str());
+		cv::Mat scaled;
+		cv::resize(input, scaled, {scale_to, scale_to}, 0.0, 0.0, cv::INTER_AREA);
+        data.image = binarize(scaled);
 		return data;
 	}
 
 	inline size_t total()  const noexcept final {return count;} 
-	friend void convert(const Pictures& pictures, int w, int h, const string& where) {
+	/*friend void convert(const Pictures& pictures, int w, int h, const string& where) {
 
 		if (not create_dir(where)) 
 			error(ER_FILE, (string("Could not create directory, ")+where).c_str());
@@ -97,7 +105,7 @@ public:
 				cv::imwrite(dir+f.filename().string(), scaled);
 			}
 		}
-	}
+	}*/
 	
 	~Pictures(){}
 };

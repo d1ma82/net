@@ -22,7 +22,8 @@ public:
 	void save(const Net<Matrix>& net) final {
 		
 		cv::FileStorage fs(file, cv::FileStorage::WRITE);
-		fs << "lr" << net.learning_rate 
+		fs << "type" << net.type
+		   << "lr" << net.learning_rate 
 		   << "input_nodes" << net.input_nodes() 
 		   << "hidden_nodes" << net.hidden_nodes()
 		   << "final_nodes" << net.final_nodes();
@@ -38,19 +39,21 @@ public:
 	Net<Matrix>& load() final {
 		
 		double lr;
+		string type;
 		int input_nodes, hidden_nodes, final_nodes;
 		cv::Mat cv_hidden_weights, cv_final_weights;
 		cv::FileStorage fs(file, cv::FileStorage::READ);
 		if (not fs.isOpened()) {LOGE("Could not load net.\n") throw ERROR;}
 		
 		fs["lr"] >> lr;
+		fs["type"] >> type;
 		fs["input_nodes"] >> input_nodes;
 		fs["hidden_nodes"] >> hidden_nodes;
 		fs["final_nodes"] >> final_nodes;
 		fs["hidden_weights"] >> cv_hidden_weights;
 		fs["final_weights"] >> cv_final_weights;
 	
-		Net<Matrix>* net = new Net<Matrix>(input_nodes, hidden_nodes, final_nodes, lr, cout);
+		Net<Matrix>* net = new Net<Matrix>(input_nodes, hidden_nodes, final_nodes, lr, cout, type);
 
 		memcpy (&net->hidden_weights->data[0], 
 				&cv_hidden_weights.data[0],

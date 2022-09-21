@@ -6,11 +6,11 @@
 struct Data {	
 	
 	Data(){}
-	Data(cv::Mat im, char lab='\0'):label{lab} {image=im;}
+	Data(cv::Mat im, Label lab='\0'):label{lab} {image=im;}
 	//Data(const Data&) = delete;	
 	//Data& operator=(const Data&) = delete;
 	
-    char label = '\0';
+    Label label = '\0';
     cv::Mat image;
 };
 

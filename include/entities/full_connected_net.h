@@ -14,7 +14,7 @@ template<MatrixConcept Matrix> struct Net {
 	using Mat=std::unique_ptr<Matrix>;
 	using value_type=typename Matrix::value_type;
 	
-	int id {-1};
+	const string type;
 	ostream& ostr;
 	std::default_random_engine engine {};
 
@@ -32,8 +32,9 @@ template<MatrixConcept Matrix> struct Net {
 	Mat hidden_error; // Ошибка распределенная между скрытым и входным слоем
 	Mat array[4]; // Служебные массивы для хранения промежуточных вычислений*/
 	
-	Net(int input_count, int hidden_count, int target_count, double lr, ostream& ostr):
+	Net(int input_count, int hidden_count, int target_count, double lr, ostream& ostr, const string type):
 		ostr{ostr},
+		type{type},
 		learning_rate{lr},
 		input{std::make_unique<Matrix>(input_count, 1)},
 		target{std::make_unique<Matrix>(target_count, 1)},
@@ -46,28 +47,30 @@ template<MatrixConcept Matrix> struct Net {
 		std::generate(hidden_weights->begin(), hidden_weights->end(), gen);
 		distribution = std::normal_distribution{0.0, pow(target_count, -0.5)};
 		std::generate(final_weights->begin(), final_weights->end(), gen);
-		id++;
 	}
 
 	~Net() {}
 	
-	Mat& query(const uchar* input_data) {
+	Label query(const uchar* input_data, const Labels& labels) {
 
 		int i=0;
 		std::for_each(&input_data[0], &input_data[input->rows], [&](auto k) {input->data[i++]=scale(k);});
 		forward();
-		return final_output;
+		i=final_output->maxI();
+		for (auto [key, value]: labels) 
+				if (value==i) return key;
+		return '\0';
 	}
-	
-	void train(const uchar* input_data, char target) {
+	// TODO: Нужно както по другому определять цель
+	void train(const uchar* input_data, Label target, const Labels& labels) {
 		
 		int i=0;
 		std::for_each(&input_data[0], &input_data[input->rows], [&](auto k) {input->data[i++]=scale(k);});
-
-		this->target->data[target] = 0.99;
+		//LOG(ostr, "Label: "<<unsigned(target)<<", index: "<<labels.at(target)<<'\n')
+		this->target->data[labels.at(target)] = 0.99;
 		forward();
 		back_propagation();
-		this->target->data[target] = Ze;
+		this->target->data[labels.at(target)] = Ze;
 	}
 	
 	inline int input_nodes() const {return input->rows;}
@@ -75,6 +78,7 @@ template<MatrixConcept Matrix> struct Net {
 	inline int final_nodes() const {return final_weights->rows;}
 	
 private:
+	
 	inline double scale(uchar k) {return k/255.0*0.99+Ze;}
 	
 	void forward() {
@@ -112,7 +116,7 @@ private:
 
 template<typename T> std::ostream& operator <<(std::ostream& os, const Net<T>& net) {
 	
-	os<<"Net: "<<net.id<<
+	os<<"Net: "<<net.type<<
 	", "<<net.input_nodes()<<
 	", "<<net.hidden_weights->rows<<'x'<<net.hidden_weights->cols<<
 	", "<<net.final_weights->rows<<'x'<<net.final_weights->cols <<

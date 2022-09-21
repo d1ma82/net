@@ -10,6 +10,13 @@
 enum {ER_RANGE=-6, ER_SYNTAX, ER_COMMAND, ER_FILE, ER_NULLPTR, ERROR, OK, EoF};
 
 typedef std::map<std::string, std::string> config;
+typedef char8_t Label;
+typedef std::map<Label, uint16_t> Labels; // label to final output index
+
+inline const Labels digit {  
+		{'0',0}, {'1',1}, {'2',2}, {'3',3}, {'4',4},
+		{'5',5}, {'6',6}, {'7',7}, {'8',8}, {'9',9}
+};
 
 template<typename M> concept MatrixConcept=requires(M m) {
 	typename M::value_type; 
@@ -56,6 +63,8 @@ inline bool create_dir(const std::string& dir) {
 inline void validate_path(std::string& path) {
 	std::replace(path.begin(), path.end(), '\\', '/');
 }
+
+inline int global_scale_factor {0};
 
 #define LOGE(msg) std::cerr<<"ERR: "<<msg;
 #define LOGI(ostream, msg) ostream<<msg;

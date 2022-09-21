@@ -8,7 +8,7 @@ namespace test {
 
     bool read() {
         try{
-            Photo photo(cout, "./db/DCIM/IMG_20220603_142405.jpg");
+            Photo photo(cout, "./db/DCIM/IMG_20220603_142405.jpg", 28);
             
             std::vector<Data> chars;
             //for (const auto& line: photo.page)
@@ -18,5 +18,4 @@ namespace test {
         } catch(runtime_error& ex) {cout<<ex.what()<<'\n';}
         return false;
     }
-    //TODO: Натринеровать сеть буквами, прочитать.
 }

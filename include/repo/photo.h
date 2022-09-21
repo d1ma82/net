@@ -12,6 +12,7 @@ typedef std::vector<std::vector<cv::RotatedRect>> Page;
 using LineIterator=Page::iterator;
 enum {BL, TL, TR, BR};
 
+int scale_to{0};
 int num_chars{0};
 const double INTER_LINE = 40.0;     // Примерный междустрочный интервал
 size_t count {0};
@@ -156,7 +157,7 @@ std::vector<Data> separate_word(const cv::Mat word) {
             LOG(cout, "Char: "<<num_chars++<<' '<<ch.area()<<' '<<center.x<<'x'<<center.y<<'\n')
             cv::getRectSubPix(word, ch.size(), center, cropped_char);
             cv::Mat scaled;
-            cv::resize(cropped_char, scaled, {28, 28}, 0.0, 0.0, cv::INTER_AREA);
+            cv::resize(cropped_char, scaled, {scale_to, scale_to}, 0.0, 0.0, cv::INTER_AREA);
             cv::Mat binary = binarize(scaled);
             result.push_back({binary});
 
@@ -172,7 +173,7 @@ std::vector<Data> separate_word(const cv::Mat word) {
 public:
 Page page;
 
-Photo(std::ostream& ostr, const char* filename): ostr{ostr} {
+Photo(std::ostream& ostr, const char* filename, int scale_to): ostr{ostr}, scale_to{scale_to} {
 
     ostr<<boolalpha;
     input_image = cv::imread(filename);

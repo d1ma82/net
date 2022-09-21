@@ -48,6 +48,15 @@ private:
 	istream& input;
 	ostream& output;
 	config conf;
+	static constexpr auto progress {[](ostream& output, int total, int read) {
+			// Сколько звездочек?
+			const int LEN=50;
+			float stars=float(read)/total;
+			char line[LEN];
+			fill(&line[0], &line[int(stars*LEN)], '*');
+			line[int(stars*LEN-1)]='\0';
+			LOGI(output, line<<int(stars*100)<<'%'<<(read>=total?'\n':'\r'))
+	}};
 		
 	void command_print() {
 		if (trainer==nullptr) error(ER_NULLPTR, "command_print, trainer==nullptr");
@@ -58,10 +67,10 @@ private:
 		
 		int input_nodes=  get<int>(CREATE, output, istr);
 		int hidden_nodes= get<int>(CREATE, output, istr);
-		int final_nodes=  get<int>(CREATE, output, istr);
 		double lr=		  get<double>(CREATE, output, istr);
+		string final_nodes_type=  get<string>(CREATE, output, istr);
 		
-		trainer= new NeuroNetTrainer(output, input_nodes, hidden_nodes, final_nodes, lr);
+		trainer= new NeuroNetTrainer(output, input_nodes, hidden_nodes, final_nodes_type, lr);
 		LOGI(output, trainer->get())
 	}
 
@@ -73,9 +82,9 @@ private:
 			if (not repo::valid(type)) error(ER_SYNTAX, helper.at(REPO));
 			
 			string value = get<string>(REPO, output, istr);
+			LOG(output, "Repo: "<<type<<':'<<value<<'\n')
 			conf[type] = value;			
 		} while (not istr.eof());
-		LOGI(output, "OK\n")
 	}
 
 	void command_train(istringstream& istr) {
@@ -84,22 +93,14 @@ private:
 		int records= get<int>(TRAIN, output, istr);
 		int epochs=  get<int>(TRAIN, output, istr);
 
-		trainer->train(records, epochs, conf, [&](int total, int read) {
-			// Сколько звездочек?
-			const int LEN=50;
-			float stars=float(read)/total;
-			char line[LEN];
-			fill(&line[0], &line[int(stars*LEN)], '*');
-			line[int(stars*LEN-1)]='\0';
-			LOGI(output, line<<int(stars*100)<<'%'<<(read>=total?'\n':'\r'))
-		});
+		trainer->train(records, epochs, conf, progress);
 	}
 
 	void command_query(istringstream& istr) {
 		
 		if (trainer==nullptr) error(ER_NULLPTR, "command_query, trainer==nullptr");
 		int records= get<int>(QUERY, output, istr);
-		trainer->query(records, conf);
+		trainer->query(records, conf, progress);
 	}
 
 	void command_save(istringstream& istr) {
@@ -144,7 +145,7 @@ public:
 				else if (command == LOAD) command_load(istr);
 				else error(ER_COMMAND, "Unknown command.\n");
 			}
-			catch(runtime_error& ex) {LOGI(output, ex.what()) continue;}
+			catch(runtime_error& ex) {LOGI(output, ex.what()<<'\n') continue;}
 			LOGI(output, "> ")
 		}
 		return OK;

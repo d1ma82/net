@@ -22,8 +22,8 @@ cv::Mat binarize(cv::Mat input) {
 
     int whites = cv::countNonZero(binary);
     int blacks = binary.size().area()-whites;
-
-    return whites<blacks? binary: ~binary; 
+    
+    return whites<blacks and binary.at<uchar>(0)==0? binary: ~binary;   // TODO: Добавлено условие и нужно потестить Photo
 }
 
 std::vector<cv::RotatedRect> text_areas(cv::Mat input) {
