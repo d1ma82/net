@@ -9,13 +9,11 @@
 
 using namespace std;
 
-typedef FullConnectedTrainer<Matrix<double>> fc_matrix;
+typedef Net<Matrix<double>> fc_matrix;
 
-template<class NeuroNetTrainer> using interpreter=Interpreter<NeuroNetTrainer>;
-
-template<class NeuroNetTrainer> void run_command_mode() {
+template<class NeuroNet> void run_command_mode() {
 	
-	interpreter<NeuroNetTrainer> interp(cin, cout);
+	Interpreter<NeuroNet> interp(cin, cout);
 	while (true) {
 		
 		cout << "> ";
@@ -23,18 +21,18 @@ template<class NeuroNetTrainer> void run_command_mode() {
 	}
 }
 
-template<class NeuroNetTrainer> int run_file_mode(const char* filename, ostream& output) {
+template<class NeuroNet> int run_file_mode(const char* filename, ostream& output) {
 			
 	ifstream file{filename};
 	if (not file.is_open()) {
 		LOGE("Could not open file, "<<filename<<endl)
 		return ER_FILE;
 	}
-	interpreter<NeuroNetTrainer> interp(file, output);
+	Interpreter<NeuroNet> interp(file, output);
 	return interp.run();
 }
 
-template<class NeuroNetTrainer> 
+template<class NeuroNet> 
 	void run_parallel_file_mode(
 		int argc, 
 		int idx, 
@@ -53,7 +51,7 @@ template<class NeuroNetTrainer>
 			LOG(cout, "Loop: "<<argc<<','<<idx<<' ')
 			outputs.push_back({});
 			results.push_back(0);
-			thread thrd {[&]() {results[i]=run_file_mode<NeuroNetTrainer>(filenames[idx], outputs[i]); }};
+			thread thrd {[&]() {results[i]=run_file_mode<NeuroNet>(filenames[idx], outputs[i]); }};
 			threads.push_back(move(thrd));
 			threads[i].join();
 			LOG(cout, filenames[idx]<<endl)
@@ -98,10 +96,6 @@ int main(int argc, char* argv[]) {
 #else
 			cout<<"Tests not compliled\n";
 #endif
-			break;
-		case 3:
-			if (strcmp(argv[1], "-f")==0) result = run_file_mode<fc_matrix>(argv[2], cout);	
-			else help(argv[1]);
 			break;
 		case 4:
 			if (strcmp(argv[1], "-fc")==0) 

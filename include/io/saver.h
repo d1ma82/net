@@ -3,23 +3,23 @@
 #include <opencv2/core.hpp>
 #include <entities/full_connected_net.h>
 
-template<class Matrix> class Saver {
+template<class NeuroNet> class Saver {
 public:
 	virtual ~Saver()=default;
-	virtual void save(const Net<Matrix>&)=0;
-	virtual Net<Matrix>& load()=0;
+	virtual void save(const NeuroNet&)=0;
+	virtual NeuroNet& load()=0;
 protected:
 	Saver(){};
 };
 
 
-template<class Matrix> class YMLsaver: public Saver<Matrix> {
+template<class NeuroNet> class YMLsaver: public Saver<NeuroNet> {
 private:
 	string file;
 public:	
 	YMLsaver(const string path): file{path} {}
 
-	void save(const Net<Matrix>& net) final {
+	void save(const NeuroNet& net) final {
 		
 		cv::FileStorage fs(file, cv::FileStorage::WRITE);
 		fs << "type" << net.type
@@ -36,7 +36,7 @@ public:
 	
 		fs.release();
 	}
-	Net<Matrix>& load() final {
+	NeuroNet& load() final {
 		
 		double lr;
 		string type;
@@ -53,15 +53,15 @@ public:
 		fs["hidden_weights"] >> cv_hidden_weights;
 		fs["final_weights"] >> cv_final_weights;
 	
-		Net<Matrix>* net = new Net<Matrix>(input_nodes, hidden_nodes, final_nodes, lr, cout, type);
+		NeuroNet* net = new NeuroNet(input_nodes, hidden_nodes, final_nodes, lr, cout, type);
 
 		memcpy (&net->hidden_weights->data[0], 
 				&cv_hidden_weights.data[0],
-				sizeof(typename Matrix::value_type)*net->hidden_weights->size());
+				sizeof(typename NeuroNet::value_type)*net->hidden_weights->size());
 			
 		memcpy (&net->final_weights->data[0], 
 			   &cv_final_weights.data[0], 
-				sizeof(typename Matrix::value_type)*net->final_weights->size());
+				sizeof(typename NeuroNet::value_type)*net->final_weights->size());
 	
 		fs.release();
 		return *net;

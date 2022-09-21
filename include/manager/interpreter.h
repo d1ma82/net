@@ -1,7 +1,7 @@
 #pragma once
 
 #include <functional>
-#include "entities/full_connected_trainer.h"
+#include "entities/trainer.h"
 #include "manager/io.h"
 #include "utils/matrix.h"
 
@@ -42,9 +42,9 @@ template<typename T> T get(const char* command, ostream& ostr, istringstream& is
 	return t;
 }
 
-template<class NeuroNetTrainer> class Interpreter {
+template<class NeuroNet> class Interpreter {
 private:
-	NeuroNetTrainer* trainer{nullptr};
+	Trainer<NeuroNet>* trainer{nullptr};
 	istream& input;
 	ostream& output;
 	config conf;
@@ -70,7 +70,7 @@ private:
 		double lr=		  get<double>(CREATE, output, istr);
 		string final_nodes_type=  get<string>(CREATE, output, istr);
 		
-		trainer= new NeuroNetTrainer(output, input_nodes, hidden_nodes, final_nodes_type, lr);
+		trainer= new Trainer<NeuroNet>(output, input_nodes, hidden_nodes, final_nodes_type, lr);
 		LOGI(output, trainer->get())
 	}
 
@@ -107,17 +107,18 @@ private:
 		
 		if (trainer==nullptr) error(ER_NULLPTR, "command_save, trainer==nullptr");
 		filesystem::path filename; istr>>filename;
-		io::IO<typename NeuroNetTrainer::value_type> io(filename);
+		io::IO<NeuroNet> io(filename);
 		io->save(trainer->get());
 		LOGI(output, "Net saved.\n")
 	}
+
 	void command_load(istringstream& istr) {
 		
 		if (trainer!=nullptr) error(ERROR, "Warn, clear before load, trainer!=nullptr\n");
-		trainer = new NeuroNetTrainer(output);
+		trainer = new Trainer<NeuroNet>(output);
 		filesystem::path filename; istr>>filename;
-		io::IO<typename NeuroNetTrainer::value_type> io(filename);
-		Net<typename NeuroNetTrainer::value_type>& net = io->load();
+		io::IO<NeuroNet> io(filename);
+		NeuroNet& net = io->load();
 		trainer->set(net);
 		LOGI(output, net<<' '<<"loaded."<<'\n')
 	}

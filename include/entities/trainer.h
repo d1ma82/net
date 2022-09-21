@@ -21,9 +21,9 @@ typedef struct tag{
 } statistic;
 
 
-template<class Matrix> class FullConnectedTrainer {
+template<class NeuroNet> class Trainer {
 private:
-	Net<Matrix>* net;
+	NeuroNet* net;
 	ostream& ostr;
 	statistic stat;
 	int records_queried{0};
@@ -38,21 +38,21 @@ private:
 		global_scale_factor=sqrt(net->input_nodes());
 	}
 public:  
-	using value_type=Matrix;
+	using value_type=NeuroNet;
 	
-	FullConnectedTrainer(ostream& ostr):ostr{ostr} {};
+	Trainer(ostream& ostr):ostr{ostr} {};
 
-    FullConnectedTrainer(ostream& ostr, int input_nodes, int hidden_nodes, const string type, double lr): 
+    Trainer(ostream& ostr, int input_nodes, int hidden_nodes, const string type, double lr): 
 		ostr{ostr}, type{type}
 	{
 		int final_nodes=supported.contains(type)? supported.at(type).size():0; 
 		if (final_nodes==0) error(ER_RANGE, (type + " not supported.").c_str());
         is_valid(input_nodes, hidden_nodes, lr);
-		net = new Net<Matrix>(input_nodes, hidden_nodes, final_nodes, lr, ostr, type);
+		net = new NeuroNet(input_nodes, hidden_nodes, final_nodes, lr, ostr, type);
 		do_after();
     }
 
-	void set(Net<Matrix>& net) {
+	void set(NeuroNet& net) {
 		
 		is_valid(net.input_nodes(), net.hidden_nodes(), net.learning_rate);
 		this->net=&net; 
@@ -116,9 +116,9 @@ public:
 
 	}
 
-    inline const Net<Matrix>& get() const noexcept {return *net;} 
+    inline const NeuroNet& get() const noexcept {return *net;} 
 	
-	friend std::ostream& operator <<(std::ostream& os, FullConnectedTrainer<Matrix>& trainer) {
+	friend std::ostream& operator <<(std::ostream& os, Trainer<NeuroNet>& trainer) {
 		
 		int eff = trainer.records_queried==0 ? 0: 
 						accumulate(trainer.score.begin(), 
