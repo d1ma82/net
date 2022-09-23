@@ -7,7 +7,6 @@
 namespace repo{
 	
 const char* MNIST 	= "mnist";
-const char* IDX3 	= "idx3";
 const char* PICS	= "picture";
 const char* PHOTO 	= "photo";
 const char* TYPE	= "type";
@@ -32,9 +31,6 @@ public:
 		}
 		else if (conf.at(TYPE)==MNIST) {
 			database= new Mnist(ostr, conf.at(IMAGES).c_str(), conf.at(LABELS).c_str());
-		}
-		else if (conf.at(TYPE)==IDX3) {
-			database = new Mnist(ostr, conf.at(IMAGES).c_str());
 		}
 		else if (conf.at(TYPE)==PICS) {
 			database = new Pictures(ostr, conf.at(IMAGES).c_str(), global_scale_factor);

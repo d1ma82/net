@@ -81,7 +81,7 @@ public:
 		stat.time = chrono::duration_cast<chrono::milliseconds>(t2-t1).count();
 		
 		LOG(ostr, setw(2)<<stat.epochs<<
-			setw(5)<<stat.records<<
+			setw(8)<<stat.records<<
 			setw(8)<<stat.time<<" ms\n");
     }
 
@@ -100,7 +100,6 @@ public:
 			symbols[next.label].first++;
 			
 			if (next.label == result) {
-				LOG(ostr, "Guess\n")
 				score.push_back(1);
 				symbols[next.label].second++;  
 			}else{
@@ -129,9 +128,9 @@ public:
 
 			const auto [all, guess]=count;
 
-			os<<setw(2)<<unsigned(sym)<<':'<<
-			setw(5)<<all<<':'<<
-			setw(5)<<guess<<':'<<
+			os<<setw(2)<<(trainer.type=="digit"?unsigned(sym)-'0':unsigned(sym))<<':'<<
+			setw(7)<<all<<':'<<
+			setw(7)<<guess<<':'<<
 			setw(9)<<guess/float(all)*100<<"%\n";
 		}
 		

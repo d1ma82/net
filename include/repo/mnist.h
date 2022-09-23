@@ -33,13 +33,14 @@ public:
 	 * @param labels - путь к меткам
 	*/
 	Mnist (std::ostream&, const char*, const char*);
-	Mnist (std::ostream&, const char*);
 
 	inline size_t total() const noexcept {return num_images;}
 	std::vector<Data> get_next(const cv::RotatedRect&) final {error(ERROR, "Not implemented");return dat;}	
 	const Data get_next() final {
 
-		if (label_file.is_open()) label_file.read((char*)&data.label, 1);
+		char ch;
+		if (label_file.is_open()) label_file.read((char*)&ch, 1);
+		data.label = '0'+unsigned(ch);
 		image_file.read((char*) data.image.data, rows * cols);
 		return data;
 	}

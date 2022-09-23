@@ -48,21 +48,6 @@ Mnist::Mnist (ostream& ostr, const char* images, const char* labels) {
 	LOGI(ostr, "Mnist: "<<num_images<<" recs, "<<rows<<'x'<<cols<<'\n')
 }
 
-Mnist::Mnist (ostream& ostr, const char* image_file_name) {
-
-	filesystem::path img_file {image_file_name};
-	image_file.open(image_file_name, ios_base::binary);
-	if (!image_file.is_open()) error(ER_FILE, (string("Could not open image file ")+image_file_name).c_str());
-	
-	image_file.read((char*) &rows, sizeof(rows));
-	image_file.read((char*) &cols, sizeof(cols));
-	image_file.read((char*) &num_images, sizeof(num_images));
-	data.image = cv::Mat(rows, cols, CV_8UC1);
-	data.image.reserveBuffer(rows*cols);
-	data.label = img_file.stem().string()[0];
-	LOGI(ostr, "IDX3: "<<num_images<<" recs, "<<rows<<'x'<<cols<<", label: "<<unsigned(data.label)<<'\n')
-}
-
 		// digits D:\git\cpp\net\mnist\train
 void separate(Mnist& mnist) {
 

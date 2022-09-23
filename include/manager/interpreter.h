@@ -21,7 +21,7 @@ const char* LOAD=		"load";
 const char  REM=		'#';
 
 static const map<const char*, const char*> helper{
-	make_pair(CREATE, "use: create int input int hidden int final float rate"),
+	make_pair(CREATE, "use: create int input int hidden float rate str type"),
 	make_pair(TRAIN, "use: train int records int epochs"),
 	make_pair(QUERY, "use: query int records"),
 	make_pair(REPO, "use: repo str type ... str images ... [str labels]")
@@ -77,14 +77,14 @@ private:
 	void command_repo(istringstream& istr) {
 		
 		conf.clear();		
-		do {
+		while (not istr.eof()) {
 			string type = get<string>(REPO, output, istr);
-			if (not repo::valid(type)) error(ER_SYNTAX, helper.at(REPO));
+			if (not repo::valid(type)) error(ER_SYNTAX, ("Invalid type: "+type+','+helper.at(REPO)).c_str());
 			
 			string value = get<string>(REPO, output, istr);
 			LOG(output, "Repo: "<<type<<':'<<value<<'\n')
 			conf[type] = value;			
-		} while (not istr.eof());
+		}
 	}
 
 	void command_train(istringstream& istr) {
@@ -132,6 +132,7 @@ public:
 		while (not input.eof()) {
 			
 			getline(input, command_line);
+			while (command_line.ends_with(' ')) command_line.pop_back();
 			istringstream istr {command_line};
 			istr >> command;
 			try { 
